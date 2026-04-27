@@ -1,7 +1,7 @@
 # uom-dissertation
 The repository for the third year project in UoM
 ### This folder contains code for ensemble learning
-##### Created by Toothless7788
+##### Created by w45242hy
 
 
 ## Note
