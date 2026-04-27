@@ -1,0 +1,32 @@
+\newpage
+% Ignore word count
+%TC:ignore
+\section*{Notation and Terminology}
+% Add to table of contents manually
+\addcontentsline{toc}{section}{Notation and Terminology}
+\begin{itemize}
+    \item $\lambda$ — Correlation penalty coefficient used in this work
+    \item $\gamma$ — Correlation penalty coefficient used in Brown et al.\ \cite{brown2005managing}, which is equivalent to $\lambda$ in this work
+    \item $\lambda^*$ — Optimal $\lambda$
+    \item $\lambda_{upper\_bound}$ — Upper bound of $\lambda$ given by the formula $\frac{m^2}{2(m - 1)^2}$ given in Brown et al.\ \cite{brown2005managing}
+    \item $\rho$ — Diversity coefficient (see Equation~\ref{equation:diversity_coefficient})
+    \item $\mathbf{x}$ — Input of a regression prediction
+    \item $y$ — True value of a given input $\mathbf{x}$
+    \item $\hat{y}$ — Prediction of 1 base learner
+    \item $\bar{y}$ — Mean prediction of all base learners
+    \item $y^*$ — The Bayes Model
+    \item $\hat{y^*}$ — Prediction of the Bayes Model
+    \item $p_i$ — The correlation penalty term added to MSE of the $i$th base learner in NCL
+    \item $m$ — Ensemble size
+    \item $\mathcal{S}$ — The set of all possible training datasets
+    \item $\sigma$ — Niche radius for NEAT-NCL in Section~\ref{subsec:stage_4}
+    \item Idempotent — An idempotent mathematical function gives the same result when applied multiple times as it does when applied once. Formally, a function $f$ is idempotent if $f(f(x)) = f(x)$ for all $x$ in its domain. 
+    \item MLP — Multi-Layer Perceptron
+    \item MSE — Mean Squared Error (see Equation~\ref{equation:mse})
+    \item NCL — Negative Correlation Learning
+    \item NEAT — NeuroEvolution of Augmenting Topologies
+    \item RMSE — Root Mean Squared Error (see Equation~\ref{equation:rmse})
+\end{itemize}
+% Start counting words again
+%TC:endignore
+\newpage

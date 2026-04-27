@@ -1,0 +1,147 @@
+\contentsline {section}{Abstract}{4}{section*.2}%
+\contentsline {section}{Declaration}{5}{section*.3}%
+\contentsline {section}{Copyright}{5}{section*.4}%
+\contentsline {section}{Acknowledgement}{5}{section*.5}%
+\contentsline {section}{Notation and Terminology}{6}{section*.6}%
+\contentsline {section}{\numberline {1}Introduction}{7}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Project Context and Motivation}{7}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Aims and Objectives}{7}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Evaluation Strategy}{8}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Report Structure}{8}{subsection.1.4}%
+\contentsline {section}{\numberline {2}Background and Theory}{9}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Overview}{9}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Statistical Foundations}{9}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Regression in supervised learning}{9}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Model Loss Decomposition}{9}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}What is ensemble learning? }{9}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}What is Negative Correlation Learning? }{11}{subsection.2.6}%
+\contentsline {subsection}{\numberline {2.7}What is NeuroEvolution of Augmenting Topologies? }{12}{subsection.2.7}%
+\contentsline {subsubsection}{\numberline {2.7.1}NEAT Notation and Terminology}{12}{subsubsection.2.7.1}%
+\contentsline {paragraph}{Genome}{12}{section*.7}%
+\contentsline {paragraph}{Phenome}{12}{section*.8}%
+\contentsline {paragraph}{Crossover}{12}{section*.9}%
+\contentsline {paragraph}{Speciation}{14}{section*.10}%
+\contentsline {paragraph}{Innovation number}{14}{section*.11}%
+\contentsline {paragraph}{Genetic distance}{14}{section*.12}%
+\contentsline {paragraph}{Elitism}{15}{section*.13}%
+\contentsline {paragraph}{Stagnation}{15}{section*.14}%
+\contentsline {paragraph}{Mutation}{15}{section*.15}%
+\contentsline {paragraph}{Fitness}{15}{section*.16}%
+\contentsline {paragraph}{Fitness sharing}{15}{section*.17}%
+\contentsline {paragraph}{Sharing factor}{15}{section*.18}%
+\contentsline {paragraph}{Niche radius}{15}{section*.19}%
+\contentsline {subsubsection}{\numberline {2.7.2}Steps of traditional NEAT evolutionary algorithm}{15}{subsubsection.2.7.2}%
+\contentsline {subsection}{\numberline {2.8}Graph algorithms}{16}{subsection.2.8}%
+\contentsline {subsubsection}{\numberline {2.8.1}Topological sort}{16}{subsubsection.2.8.1}%
+\contentsline {section}{\numberline {3}Design and Implementation}{18}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Datasets}{18}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Model Architecture Representation}{18}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Experiment Data and Graph Generation}{18}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Develop Baseline Models}{18}{subsection.3.4}%
+\contentsline {paragraph}{Motivation}{18}{section*.20}%
+\contentsline {paragraph}{Model Construction}{18}{section*.21}%
+\contentsline {paragraph}{Experimental Design for MLP}{19}{section*.22}%
+\contentsline {paragraph}{Experimental Design for arithmetic-mean-ensemble}{20}{section*.23}%
+\contentsline {subsection}{\numberline {3.5}Implement NCL Ensemble}{21}{subsection.3.5}%
+\contentsline {paragraph}{Motivation}{21}{section*.24}%
+\contentsline {paragraph}{Model Construction}{21}{section*.25}%
+\contentsline {paragraph}{Experimental Design}{21}{section*.26}%
+\contentsline {paragraph}{Reference Experiment}{22}{section*.27}%
+\contentsline {subsection}{\numberline {3.6}Integrate NEAT with NCL}{23}{subsection.3.6}%
+\contentsline {paragraph}{Motivation}{23}{section*.28}%
+\contentsline {subsubsection}{\numberline {3.6.1}NEAT-NCL algorithm}{23}{subsubsection.3.6.1}%
+\contentsline {subsubsection}{\numberline {3.6.2}Population diversity Calculation}{25}{subsubsection.3.6.2}%
+\contentsline {paragraph}{Model Construction}{26}{section*.29}%
+\contentsline {subsubsection}{\numberline {3.6.3}Dynamic neural network on GPU}{27}{subsubsection.3.6.3}%
+\contentsline {paragraph}{Assumption}{27}{section*.30}%
+\contentsline {paragraph}{Limitation}{28}{section*.31}%
+\contentsline {paragraph}{Testing}{28}{section*.32}%
+\contentsline {paragraph}{Example}{28}{section*.33}%
+\contentsline {paragraph}{Experimental Design}{30}{section*.34}%
+\contentsline {paragraph}{Reference Experiment}{31}{section*.35}%
+\contentsline {subsection}{\numberline {3.7}Analyse Different Aggregators}{31}{subsection.3.7}%
+\contentsline {paragraph}{Motivation}{31}{section*.36}%
+\contentsline {subsubsection}{\numberline {3.7.1}Updated NCL loss functions}{32}{subsubsection.3.7.1}%
+\contentsline {paragraph}{Model Construction}{32}{section*.37}%
+\contentsline {paragraph}{Experimental Design}{32}{section*.38}%
+\contentsline {subsection}{\numberline {3.8}Study Different Ensemble Topologies}{33}{subsection.3.8}%
+\contentsline {paragraph}{Motivation}{33}{section*.39}%
+\contentsline {subsubsection}{\numberline {3.8.1}Representing recursively using a tree}{34}{subsubsection.3.8.1}%
+\contentsline {paragraph}{Model Construction}{35}{section*.40}%
+\contentsline {paragraph}{Experimental Design}{35}{section*.41}%
+\contentsline {section}{\numberline {4}Evaluation and Discussion}{38}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Overview of Experimental Findings}{38}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Develop Baseline Models}{38}{subsection.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.1}Expected Observations}{38}{subsubsection.4.2.1}%
+\contentsline {paragraph}{Training loss is lower than testing loss}{38}{section*.42}%
+\contentsline {paragraph}{Rapid initial loss reduction with diminishing returns}{38}{section*.43}%
+\contentsline {paragraph}{Increase in testing loss for over-training}{38}{section*.44}%
+\contentsline {paragraph}{MLP of higher complexity has a lower loss}{38}{section*.45}%
+\contentsline {paragraph}{Similar loss between ensemble base learners and the control MLP}{39}{section*.46}%
+\contentsline {paragraph}{Ensemble MSE is less than or equal to average learners' MSEs}{39}{section*.47}%
+\contentsline {paragraph}{Increase in ensemble size does not lead to decrease in ensemble MSE}{39}{section*.48}%
+\contentsline {paragraph}{Better ensemble performance with better base learners}{39}{section*.49}%
+\contentsline {subsubsection}{\numberline {4.2.2}Experiments and Observations}{39}{subsubsection.4.2.2}%
+\contentsline {paragraph}{Comparative analysis of MLP training and testing loss}{39}{section*.50}%
+\contentsline {paragraph}{Effect of training on MLP loss}{39}{section*.51}%
+\contentsline {paragraph}{Effect of model complexity on MLP loss}{39}{section*.52}%
+\contentsline {paragraph}{The suitable MLP model architecture}{40}{section*.53}%
+\contentsline {paragraph}{Ensemble base learners behave like the control MLP}{40}{section*.54}%
+\contentsline {paragraph}{Ensemble MSE is less than or equal to average learners' MSEs}{40}{section*.55}%
+\contentsline {paragraph}{Effect of ensemble size on diversity}{40}{section*.56}%
+\contentsline {paragraph}{Effect of individual performance on ensemble performance}{40}{section*.57}%
+\contentsline {subsection}{\numberline {4.3}Implement NCL Ensemble}{44}{subsection.4.3}%
+\contentsline {subsubsection}{\numberline {4.3.1}Expected Observations}{44}{subsubsection.4.3.1}%
+\contentsline {paragraph}{Ensemble performance varies with $\rho $}{44}{section*.58}%
+\contentsline {paragraph}{Higher diversity of base learners when NCL is used}{45}{section*.59}%
+\contentsline {paragraph}{Simpler base learners are better than more complex base learners}{45}{section*.60}%
+\contentsline {subsubsection}{\numberline {4.3.2}Experiments and Observations}{45}{subsubsection.4.3.2}%
+\contentsline {paragraph}{Effect of correlation penalty coefficient}{45}{section*.61}%
+\contentsline {paragraph}{Effect of network complexity}{45}{section*.62}%
+\contentsline {paragraph}{Effect of ensemble size}{46}{section*.63}%
+\contentsline {paragraph}{$\rho $ should not be maximised}{46}{section*.64}%
+\contentsline {paragraph}{Double descent in ensemble MSE and $\rho $}{46}{section*.65}%
+\contentsline {subsection}{\numberline {4.4}Integrate NEAT with NCL}{55}{subsection.4.4}%
+\contentsline {subsubsection}{\numberline {4.4.1}Expected Observations}{55}{subsubsection.4.4.1}%
+\contentsline {paragraph}{Performance improvement over evolutionary generations}{55}{section*.66}%
+\contentsline {paragraph}{Linear relationship between $\lambda $ and $-D$}{55}{section*.67}%
+\contentsline {paragraph}{Different values of optimal $\lambda $}{55}{section*.68}%
+\contentsline {paragraph}{More diversity seen in NEAT-NCL base learners}{55}{section*.69}%
+\contentsline {subsubsection}{\numberline {4.4.2}Experiments and Observations}{55}{subsubsection.4.4.2}%
+\contentsline {paragraph}{Effect of evolution length on different attributes}{55}{section*.70}%
+\contentsline {paragraph}{Effect of niche radius}{56}{section*.71}%
+\contentsline {paragraph}{Effect of ensemble size}{56}{section*.72}%
+\contentsline {paragraph}{Effect of population diversity}{57}{section*.73}%
+\contentsline {paragraph}{NEAT-NCL is not the best architecture}{57}{section*.74}%
+\contentsline {paragraph}{Smaller ensemble size is preferred for a NEAT-NCL ensemble model}{57}{section*.75}%
+\contentsline {paragraph}{Simple base learners are preferred}{57}{section*.76}%
+\contentsline {subsection}{\numberline {4.5}Analyse Different Aggregators}{65}{subsection.4.5}%
+\contentsline {subsubsection}{\numberline {4.5.1}Expected Observations}{65}{subsubsection.4.5.1}%
+\contentsline {paragraph}{Arithmetic-mean-aggregator and median-aggregator are more similar and better}{65}{section*.77}%
+\contentsline {paragraph}{Small ensemble MSE despite aggregator used}{66}{section*.78}%
+\contentsline {subsubsection}{\numberline {4.5.2}Experiments and Observations}{66}{subsubsection.4.5.2}%
+\contentsline {paragraph}{Arithmetic-mean-aggregator and median-aggregator are similar}{66}{section*.79}%
+\contentsline {paragraph}{Poor and fluctuated ensemble performance with neural-network-aggregator}{66}{section*.80}%
+\contentsline {paragraph}{Median-aggregator gave more stable NEAT-NCL ensemble performance}{66}{section*.81}%
+\contentsline {subsection}{\numberline {4.6}Study Different Ensemble Topologies}{75}{subsection.4.6}%
+\contentsline {subsubsection}{\numberline {4.6.1}Expected Observations}{75}{subsubsection.4.6.1}%
+\contentsline {paragraph}{Topological complexity requires ``smart'' aggregator}{75}{section*.82}%
+\contentsline {subsubsection}{\numberline {4.6.2}Experiments and Observations}{75}{subsubsection.4.6.2}%
+\contentsline {paragraph}{Similar traditional ensemble performance regardless of recursive architectures}{75}{section*.83}%
+\contentsline {paragraph}{Recursive architecture give NCL ensemble performance improvement conditionally}{76}{section*.84}%
+\contentsline {paragraph}{NEAT-NCL ensemble performance improvement when recursive architecture is matched with specific aggregator correctly}{76}{section*.85}%
+\contentsline {paragraph}{A median-aggregator is better for a recursive NEAT-NCL ensemble}{76}{section*.86}%
+\contentsline {paragraph}{Exactly same testing loss for a recursive NEAT-NCL ensemble conditionally}{76}{section*.87}%
+\contentsline {section}{\numberline {5}Conclusion and Future Work}{81}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Summary of Contributions}{81}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Potential Improvements}{81}{subsection.5.2}%
+\contentsline {paragraph}{Repeating experiment}{81}{section*.88}%
+\contentsline {paragraph}{More thorough hyperparameter tuning}{81}{section*.89}%
+\contentsline {paragraph}{More variety of datasets and problems}{81}{section*.90}%
+\contentsline {subsection}{\numberline {5.3}Future Research Directions}{82}{subsection.5.3}%
+\contentsline {paragraph}{Double descent in ensemble MSE and $\rho $}{82}{section*.91}%
+\contentsline {paragraph}{Reversible algorithm to run dynamic neural networks on GPU}{82}{section*.92}%
+\contentsline {paragraph}{More diverse recursive ensemble models}{82}{section*.93}%
+\contentsline {section}{Appendix \numberline {A}Source Code}{83}{appendix.1.A}%
+\contentsline {section}{Appendix \numberline {B}Reproducibility}{83}{appendix.1.B}%
+\contentsline {section}{References}{84}{section*.94}%

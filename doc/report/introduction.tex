@@ -1,0 +1,59 @@
+\section{Introduction}
+\label{sec:introduction}
+
+
+\subsection{Project Context and Motivation}
+Ensemble learning is a cornerstone of modern machine learning, valued for its ability to significantly improve predictive accuracy compared to an individual model~\cite{hansen2002neural}. Traditional techniques, such as Bagging~\cite{breiman1996bagging}, promote diversity passively. While this passive approach often outperforms single MLPs, it highlights a critical need to understand and actively manage diversity within an ensemble. 
+
+In response, researchers have developed studies~\cite{liu1999ensemble}~\cite{wood2023unified} and methods to understand and enforce diversity actively. While mathematical decompositions exist to study these effects, several questions remain open: what is the optimal level of diversity for performance? What is the most effective way to introduce it beyond varying learner parameters? On top of diversity, the ensemble success depends heavily on the aggregator, which must be designed to fully exploit the diversity of the base learners. Exploring which aggregators and combination methods yield the best performance gains is also a primary focus of this work. 
+
+This project addresses these gaps by focusing on Negative Correlation Learning (NCL), which actively encourages diversity. We extend NCL by integrating it with NeuroEvolution of Augmenting Topologies (NEAT). This allows us to study ensemble performance when base learners are diverse not only in their weights and biases but also in their underlying architectures. Finally, we investigate how different aggregators and learner arrangements impact overall performance. Since the project involves multiple objectives, a \textbf{divide-and-conquer} approach is adopted, organising the work into distinct stages. Each objective serves as a checkpoint that must be fully verified before moving to the next. For every stage, the expected behaviours and goals are defined, followed by a targeted experiment to evaluate and confirm success. 
+
+
+\subsection{Aims and Objectives}
+This project aims to demonstrate the impact of diversity and aggregation on ensemble performance, with a specific focus on NCL. The following objectives were tackled sequentially, with each objective refining the constraints and assumptions of the previous one: 
+\begin{enumerate}
+    \item \textbf{To develop baseline models} (addressed in Section~\ref{subsec:stage_1}) \\
+    Since all experiments use MLPs and the same dataset underlyingly, an MLP is first implemented using PyTorch to establish a performance baseline. It also helps identifying key hyperparameters, e.g. number of training epochs. Then, a committee-based approach is introduced, where an arithmetic-mean-ensemble is created. Its codebase will be modified in Section~\ref{subsec:stage_3}. 
+
+    \item \textbf{To implement NCL ensemble} (addressed in Section~\ref{subsec:stage_3}) \\
+    An ensemble is developed using Negative Correlation Learning. With more granular control over the trade-off between accuracy and diversity compared to previous models, this stage investigates how diversity, ensemble size and architecture influence ensemble performance. 
+
+    \item \textbf{To integrate NEAT with NCL} (addressed in Section~\ref{subsec:stage_4}) \\
+    An ensemble integrating NEAT with NCL is implemented to evaluate the benefits of architectural diversity alongside weight diversity. Additionally, Objective~2 tests the hypothesis that the optimal correlation penalty coefficient ($\lambda^*$) varies across different ensembles. Thus, Objective~3 addresses the challenge of parameter selection and determines the appropriate value of $\lambda$ dynamically during training rather than through exhaustive manual tuning. 
+
+    \item \textbf{To analyse different aggregators} (addressed in Section~\ref{subsec:stage_5}) \\
+    The impact of three distinct aggregator types on ensemble performance is investigated. An arithmetic-mean-aggregator was employed to combine base learner predictions when studying previous objectives. Two more aggregators, a median-aggregator and a neural-network-aggregator, are implemented to aggregate predictions in different ways. 
+
+    \item \textbf{To study different ensemble topologies} (addressed in Section~\ref{subsec:stage_6}) \\
+    The impact of different logical arrangements of base learners, paired with various aggregators, on the final output is investigated. To study previous objectives, all base learners were put at the same level of the ensemble hierarchy. For this objective, base learners might sit at different levels, forming different ensemble topologies. 
+\end{enumerate}
+
+
+
+
+\subsection{Evaluation Strategy}
+A series of experiments were conducted to elicit specific, expected patterns (detailed in \textbf{Expected Observations} in Section~\ref{sec:evaluation}), which served as the success criteria for objectives and verified the implementation correctness. Each experiment aligns with a project objective, meaning the collected metrics collected vary by task. However, since the primary goal is studying the impact of diversity on ensemble performance, several core metrics related to performance and diversity are focused. 
+
+Mean Squared Error (MSE) is the primary metric for evaluating model performance. While certain experiments (e.g. NCL study in Section~\ref{subsec:stage_3}) incorporates a penalty term into the training loss, MSE remains the consistent evaluation standard for several reasons: 
+
+\begin{enumerate}
+    \item \textbf{Task Alignment} \\
+    Regression data is used, for which MSE is the standard performance metric~\cite{hodson2021mean}. 
+
+    \item \textbf{Error Weighting} \\
+    Squaring the prediction errors, MSE heavily penalises large outliers, forcing the model to minimise significant predictive errors. 
+
+    \item \textbf{Mathematical Compatibility} \\
+    The differentiability of MSE is particularly advantageous for NCL. With the appropriate $\lambda$, the MSE derivative can simplify the NCL loss function by canceling specific components of the penalty term, resulting in a simpler derivative representation (Theorem~\ref{theorem:loss_function_ncl_lambda_1}). 
+\end{enumerate}
+
+Diversity coefficient ($\rho$) serves as a key indicator, helping us explain the relationship between parameter adjustments (e.g. changing ensemble size and NCL $\lambda$) and the corresponding change in performance (manifested by MSE). Theorem~\ref{theorem:ambiguity_decomposition} and Theorem~\ref{theorem:bias_variance_diversity_decomposition} justify using $\rho$ as a measure of diversity. 
+
+For the NEAT-NCL ensembles, additional metrics are introduced. Population diversity ($D$) measures variation across populations rather than individual learners and the sharing factor provides further insight into diversity. 
+
+Finally, custom data structures and algorithms (detailed in Section~\ref{subsubsec:neat_ncl_population_diversity} and Section~\ref{subsubsec:dynamic_nn_on_gpu}) are verified using PyTest to ensure technical correctness. 
+
+
+\subsection{Report Structure}
+The report goes through the experimental background and reviews of the core theories, including Bias-variance-diversity Decomposition, NCL and NEAT. Subsequently, the experimental design and algorithmic choices are explained, providing both conceptual diagrams and Python implementation details. Then, the expected outcomes are presented, experimental results are analysed and a critical discussion of the findings is provided. Finally, a summary of the project contributions is given with suggestions of future research directions. 

@@ -1,0 +1,1810 @@
+\section{Evaluation and Discussion}
+\label{sec:evaluation}
+
+
+\subsection{Overview of Experimental Findings}
+The summary of important findings of all experiments (Section~\ref{subsec:evaluation_baseline} to Section~\ref{subsec:evaluation_recursive}) are provided below: 
+\begin{enumerate}
+    \item \textbf{Ensembles consistently outperform single models} \\
+    Section~\ref{subsubsec:evaluation_baseline_observations} demonstrated that an arithmetic-mean-ensemble consistently outperforms a single MLP when using MSE. This empirically validates the theoretical foundation established in Theorem~\ref{theorem:ambiguity_decomposition}. 
+
+    \item \textbf{Efficiency gains through moderate diversity} \\
+    Section~\ref{subsubsec:evaluation_ncl_observations} demonstrated that when the diversity-accuracy balance is optimised, ensembles of simpler base learners can outperform both complex individuals and ensembles of complex base learners, i.e. diversity can act as a substitute for model complexity, reducing resource requirements while enhancing model performance. 
+
+    \item \textbf{Divergent impacts of ensemble size} \\
+    Section~\ref{subsubsec:evaluation_ncl_observations} showed that for fixed architectures, a larger $m$ typically improves accuracy. Conversely, Section~\ref{subsubsec:evaluation_neat_ncl_observations} reveals that for dynamic architectures, a smaller $m$ is often preferred. 
+
+    \item \textbf{Limitations of architectural diversity} \\
+    Section~\ref{subsubsec:evaluation_neat_ncl_observations} showed that for this specific regression task, actively encouraging architectural diversity of base learners does not improve (in fact, hinder) ensemble performance. 
+
+    \item \textbf{Preference for simple architectures} \\
+    Section~\ref{subsubsec:evaluation_baseline_observations}, Section~\ref{subsubsec:evaluation_ncl_observations} and Section~\ref{subsubsec:evaluation_neat_ncl_observations} both showed that reducing the number of hidden layers leads to better results for this regression problem, favouring simpler base models. 
+
+    \item \textbf{Conditional benefits of recursive ensemble architecture} \\
+    Section~\ref{subsubsec:evaluation_recursive_observations} showed that a recursive ensemble architecture provides a performance boost only when a neural-network-aggregator is used. 
+\end{enumerate}
+
+
+\subsection{Develop Baseline Models}
+\label{subsec:evaluation_baseline}
+\subsubsection{Expected Observations}
+\paragraph{Training loss is lower than testing loss}
+An MLP iteratively optimises its parameters to minimise error on the training set. However, due to inherent stochastic variations between the training and testing distributions, performance should degrade on unseen testing data. 
+
+\paragraph{Rapid initial loss reduction with diminishing returns}
+An initial MLP typically exhibits high loss as its initial parameters fail to capture the underlying data structure (underfitting). The model accuracy should increase as optimisation progresses, resulting in a sharp initial decline in loss. However, after a threshold of epochs, the rate of improvement should diminish because the model has captured the primary data patterns. Subsequent training yields negligible gains as the parameters converge toward a local or global optimum. 
+
+\paragraph{Increase in testing loss for over-training}
+When a MLP is trained too much, it begins to memorise noise in the training data (overfitting) rather than learning its underlying structure. Testing loss should rise, signaling a decline in generalisation performance. 
+
+\paragraph{MLP of higher complexity has a lower loss}
+Increased model complexity enables the capture of intricate, non-linear relationships within the underlying data. Assuming other hyperparameters remain constant, complex models are expected to achieve higher predictive accuracy and lower loss than simpler models. 
+
+\paragraph{Similar loss between ensemble base learners and the control MLP}
+The only stochastic variable between an ensemble base learner and the control MLP is the specific data partitioning used during training. Consequently, their MSEs should converge to a similar value. 
+
+\paragraph{Ensemble MSE is less than or equal to average learners' MSEs}
+From Section~\ref{subsec:background_ensemble_learning}, the ensemble loss is mathematically bounded by the average loss of its individual learners. Since $m$ identical learners' predictions are not likely, ensemble MSE should always be lower than the average MSE of base learners. 
+
+\paragraph{Increase in ensemble size does not lead to decrease in ensemble MSE}
+From Section~\ref{subsec:background_ensemble_learning}, increasing $m$ \textbf{intuitively} should increase diversity and thus, reduce ensemble MSE. However, this is not expected in the current experiment settings. 
+
+At this stage, techniques like bagging have not been used. Base learners are initialised randomly but trained with the same dataset. $(\hat{y}_i - \bar{y})^2$ should approximately be the same for all $i$ and increasing $m$ should not increase the average of such distance (unless the new base learner makes an outlier prediction but this behaviour completely depends on the random MLP initialisation).Therefore, the ambiguity/diversity term (and so, ensemble MSE) should remain approximately constant when $m$ increases. 
+
+\paragraph{Better ensemble performance with better base learners}
+The current ensemble architecture utilises a simple arithmetic-mean aggregator. Base learners learn similar aspects of the training data as NCL is absent. Thus, the ensemble performance depends directly on the individual capabilities of its base learners. Consequently, an ensemble of more sophisticated base learners should yield higher predictive accuracy, effectively functioning as a ``committee of experts'' with greater collective specialised knowledge. 
+
+
+\subsubsection{Experiments and Observations}
+\label{subsubsec:evaluation_baseline_observations}
+\paragraph{Comparative analysis of MLP training and testing loss}
+For a single MLP, testing loss fluctuates more than the training loss. Increasing training reduces fluctuations of both losses. 
+
+From Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_6} to Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2}, the testing loss (blue line) exhibited higher fluctuations than the training loss (orange line). These fluctuations likely stem from excessive learning rate for the particular model architecture (e.g. Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2} and Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2_2_2_2}), leading to model overshoot and irregular predictive errors. These fluctuations diminished with more training, suggesting that the model eventually captured the underlying data distribution more consistently. 
+
+\paragraph{Effect of training on MLP loss}
+For a single MLP, the experimental results revealed two distinct phases of model training. Both training and testing losses decrease drastically initially, afterwhich they continued to decrease but at a slower rate. 
+
+Initially, both training and testing losses decreased drastically (before epoch~50 from Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_6} to Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2}). In addition to capturing the underlying data structure, this rapid improvement occurred because the high initial MSE generated large gradients for backpropagation, leading to significant weight adjustments. 
+
+As training progressed (epochs 100-1000), the rate of improvement diminished. The loss curves transitioned from near-vertical drops to a gentler gradient, eventually becoming almost horizontal. This indicated a performance saturation, where the model had learnt the majority of the underlying data structure and further weight updates yielded diminishing returns. 
+
+Signs of overfitting were not found, suggesting 1000~epochs of training was not over-training. 
+
+\paragraph{Effect of model complexity on MLP loss}
+For a single MLP, higher model complexity leads to larger decrease in loss at early stage. However, model complexity does not affect the converged, final loss. 
+
+Increasing model complexity (i.e. higher hidden node count) consistently reduced both training and testing losses. The 2-node model in Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2} began with losses near $0.3$ at 10 epochs, converging to approximately $0.05$ by epoch 500. In contrast, the 6-node model in Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_6} demonstrated superior initial performance with a loss of $0.17$ while the 12-node model in Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_12} started at $0.2$. While higher complexity accelerated convergence and lowered the error quicker, all models eventually approached a similar performance plateau at $0.025$ (Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_6}, Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_12} and Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2}) and $0.22$ (Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2} and Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2_2_2_2}) respectively. 
+
+\paragraph{The suitable MLP model architecture}
+A single hidden layer with more nodes performs better (lower bias) and converges more stably (lower variance) for this regression task than multiple layers with fewer nodes. To increase model complexity, adding nodes to the existing layer is more effective than adding more layers. 
+
+A comparison between models with an identical total node count ($6$ or $12$) revealed that \textbf{network depth} significantly worsened stability and performance more than \textbf{network width}. Architectures with a single, wider hidden layer (Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_6} and Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_12}) achieved consistently lower testing errors and fewer fluctuations than deeper architectures (Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2} and Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2_2_2_2}). These fluctuations suggested that deeper, narrower models were more susceptible to ``severely wrong predictions'' when encountering noise in training data. 
+
+\paragraph{Ensemble base learners behave like the control MLP}
+Despite the ensemble performance, each ensemble base learner has a similar performance as the control MLP. 
+
+Average ensemble base learners and the control MLP had similar MSE as both shared identical hyperparameter configurations. The marginal performance variations were due to different training data partitioning. This consistency was particularly visible in Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_200}, Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400} and Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_6_fixed_epoch_num_400}. Even in instances where performance of the control MLP fell slightly outside the immediate range of the average individual MSE, the absolute differences remained negligible. In Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_12_fixed_epoch_num_400}, the control MLP achieved an MSE of approximately $0.03$ ($\text{RMSE} \approx 0.173$). In comparison, the ensemble base learners averaged an MSE of $0.05$ ($\text{RMSE} \approx 0.224$). Given that the target values were scaled within the range of $[-1, 1]$, the difference between their distances from ground truth ($0.173$ and $0.224$) was minimal. 
+
+\paragraph{Ensemble MSE is less than or equal to average learners' MSEs}
+Consistent with Theorem~\ref{theorem:ambiguity_decomposition} and Theorem~\ref{theorem:bias_variance_diversity_decomposition}, ensemble loss is consistently below the average loss of its corresponding base learners. 
+
+Across all figures, the ensemble MSE (blue line) was lower than the average MSE (orange line), confirming the performance benefits of aggregation. Specifically, in Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_400} and Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_fixed_epoch_num_400}, the blue data points were visibly below the orange points for all $m$, which empirically validated that the ensemble loss was bounded by the average loss of the base learners (Theorem~\ref{theorem:ambiguity_decomposition}). 
+
+\paragraph{Effect of ensemble size on diversity}
+With the right model architecture, changing $m$ does not affect the diversity/ambiguity of an arithmetic-mean-ensemble whose base learners are trained with identical data. 
+
+Increasing $m$ did not significantly impact the diversity coefficient $\rho$. As illustrated in Figure~\ref{fig:traditional_diversity_coefficient_against_ensemble_size_2_16_fixed_epoch_num_400}, most ensemble architectures maintained a stable $\rho$ value regardless of $m$. The notable exception was the architecture consisting of three hidden layers with two nodes each (\texttt{[2, 2, 2]}). Its high fluctuation of $\rho$ was consistent with the findings in Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2}, which identified this specific configuration as unsuitable for the task due to significant predictive instability. Combining fluctuating base learners, their poor individual predictive behaviors resulted in an unexpectedly large and unstable $\rho$. Similarly, the \texttt{[2, 2, 2, 2, 2, 2]} architecture (purple line) exhibited fluctuations of higher magnitude and a higher $\rho$ than simpler models (e.g. \texttt{[2]}, \texttt{[6]} etc.), further suggesting that deeper, narrower networks introduced noise and prediction diversity. 
+
+\paragraph{Effect of individual performance on ensemble performance}
+Better individual learners give better ensemble performance and can be achieved by increasing number of training epochs and using the right architecture with higher model complexity. 
+
+Comparisons across Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_200}, Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_6_fixed_epoch_num_200} and Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_12_fixed_epoch_num_200} confirmed that increasing the number of hidden nodes reduced the ensemble MSE. This improvement was a direct consequence of the more accurate predictive capabilities of more complex base learners, as evidenced by the lower training and testing MSEs observed in Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_6}, Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_12} and Figure~\ref{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2}. 
+
+Increasing training similarly enhanced ensemble accuracy. From Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_200} and Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_400}, increasing the training period from 200 to 400 epochs reduced the ensemble MSE from approximately $0.135$ to $0.125$. In deeper architectures, the results remained visible. From Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_fixed_epoch_num_200} and Figure~\ref{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_fixed_epoch_num_400}, MSE dropped from $0.175$ to $0.15$ over the same increase in epoch. The same phenomenon could also be seen across all figures. 
+
+
+% ================================ Images ================================
+
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/mlp/mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_6.png}
+        \caption{Effect of number of training epochs on training and testing MSEs when the model has a learning rate of 0.0001 and 1 hidden layer of 6 hidden nodes}
+        \label{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_6}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/mlp/mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_12.png}
+        \caption{Effect of number of training epochs on training and testing MSEs when the model has a learning rate of 0.0001 and 1 hidden layer of 12 hidden nodes}
+        \label{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_12}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/mlp/mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2.png}
+        \caption{Effect of number of training epochs on training and testing MSEs when the model has a learning rate of 0.0001 and 3 hidden layers, each of 2 hidden nodes}
+        \label{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/mlp/mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2_2_2_2.png}
+        \caption{Effect of number of training epochs on training and testing MSEs when the model has a learning rate of 0.0001 and 6 hidden layers, each of 2 hidden nodes}
+        \label{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2_2_2_2_2_2}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\textwidth]{img/mlp/mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2.png}
+        \caption{Effect of number of training epochs on training and testing MSEs when the model has a learning rate of 0.0001 and 1 hidden layer of 2 hidden nodes}
+        \label{fig:mlp_mse_against_epoch_num_10_1000_fixed_learning_rate_00001_hidden_size_2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\textwidth]{img/traditional/traditional_diversity_coefficient_against_ensemble_size_2_16_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on the diversity coefficient when all models were trained with 400 epochs}
+        \label{fig:traditional_diversity_coefficient_against_ensemble_size_2_16_fixed_epoch_num_400}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/traditional/traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_200.png}
+        \caption{Effect of ensemble size on testing MSEs when the model with 200 epochs has a learning rate of 0.001 and 1 hidden layer of 2 hidden nodes}
+        \label{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_200}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/traditional/traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on testing MSEs when the model trained with 400 epochs has a learning rate of 0.001 and 1 hidden layer of 2 hidden nodes}
+        \label{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_400}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/traditional/traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_fixed_epoch_num_200.png}
+        \caption{Effect of ensemble size on testing MSEs when the model with 200 epochs has a learning rate of 0.001 and 3 hidden layers of 2 hidden nodes}
+        \label{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_fixed_epoch_num_200}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/traditional/traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on testing MSEs when the model trained with 400 epochs has a learning rate of 0.001 and 3 hidden layers of 2 hidden nodes}
+        \label{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_fixed_epoch_num_400}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/traditional/traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_200.png}
+        \caption{Effect of ensemble size on testing MSEs when the model with 200 epochs has a learning rate of 0.001 and 6 hidden layers of 2 hidden nodes}
+        \label{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_200}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/traditional/traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on testing MSEs when the model trained with 400 epochs has a learning rate of 0.001 and 6 hidden layers of 2 hidden nodes}
+        \label{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/traditional/traditional_mse_against_ensemble_size_2_16_fixed_architecture_6_fixed_epoch_num_200.png}
+        \caption{Effect of ensemble size on testing MSEs when the model with 200 epochs has a learning rate of 0.001 and 1 hidden layer of 6 hidden nodes}
+        \label{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_6_fixed_epoch_num_200}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/traditional/traditional_mse_against_ensemble_size_2_16_fixed_architecture_6_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on testing MSEs when the model trained with 400 epochs has a learning rate of 0.001 and 1 hidden layer of 6 hidden nodes}
+        \label{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_6_fixed_epoch_num_400}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/traditional/traditional_mse_against_ensemble_size_2_16_fixed_architecture_12_fixed_epoch_num_200.png}
+        \caption{Effect of ensemble size on testing MSEs when the model with 200 epochs has a learning rate of 0.001 and 1 hidden layer of 12 hidden nodes}
+        \label{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_12_fixed_epoch_num_200}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/traditional/traditional_mse_against_ensemble_size_2_16_fixed_architecture_12_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on testing MSEs when the model trained with 400 epochs has a learning rate of 0.001 and 1 hidden layer of 12 hidden nodes}
+        \label{fig:traditional_mse_against_ensemble_size_2_16_fixed_architecture_12_fixed_epoch_num_400}
+    \end{minipage}
+\end{figure}
+
+
+\subsection{Implement NCL Ensemble}
+\label{subsec:evaluation_ncl}
+\subsubsection{Expected Observations}
+\paragraph{Ensemble performance varies with $\rho$}
+From Section~\ref{subsec:background_ensemble_learning}, when $\lambda = 0$ initially, NCL base learners are trained independently. Thus, the NCL ensemble model should have similar MSE as the arithmetic-mean-ensemble in Section~\ref{subsec:stage_2}. When $\lambda$ increases, diversity should increase and ensemble MSE should reduce. When $\lambda = 1$, the ensemble model should behave like a single estimator, which should have a similar MSE as a single MLP. If $\lambda$ continues to increase and exceeds $\lambda_{upper\_bound}$, the ensemble model should have a performance recession indicated by an increase in MSE. 
+
+\paragraph{Higher diversity of base learners when NCL is used}
+From Section~\ref{subsec:background_ensemble_learning}, increasing $m$ encourages diversity. Consequently, $\rho$ is expected to scale proportionally with $\lambda$. 
+
+\paragraph{Simpler base learners are better than more complex base learners}
+The introduction of the NCL penalty alters the traditional relationship between model complexity and performance. While Section~\ref{subsec:stage_2} established that increased complexity typically improves individual accuracy, the inclusion of a diversity constraint leads a trade-off during optimisation. 
+
+For high-complexity base learners, the pressure to minimise the penalty term $(\hat{y}_i - \bar{y})^2$ can become counterproductive. As these ``senior'' models already possess high individual accuracies, forcing them to be diverse requires them to sacrifice their optimal function approximations, resulting in a ``committee'' where only a few members remain near the ground truth, degrading ensemble performance. 
+
+Conversely, simpler base learners initially possess higher individual bias and lower accuracy. When the NCL penalty encourages them to explore different aspects of the data structure, it effectively prevents them from all converging on the same suboptimal local minima, increasing the probability that specific learners will randomly capture unique features of the underlying data. The ensemble prediction should outperform any single model. Thus, it is expected that ensemble MSE is lower when simpler base learners are used. 
+
+
+\subsubsection{Experiments and Observations}
+\label{subsubsec:evaluation_ncl_observations}
+\paragraph{Effect of correlation penalty coefficient}
+Increasing $\lambda$ increases diversity, which initially improves ensemble accuracy. Once $\lambda$ reaches its upper bound $\lambda_{upper\_bound}$, base learners drastically become excessively diverse and ensemble accuracy decreases. Thus, $\lambda$ should not be larger than $\lambda_{upper\_bound}$ and should be approximately $\lambda^*$ to maximise ensemble accuracy. In this case, setting $\lambda = 0.7$ seems to give good ensemble performance. 
+
+A non-linear relationship between $\lambda$ and ensemble performance was demonstrated. When $\lambda = 0$, the NCL ensemble behaved identically to an arithmetic-mean-ensemble of independent learners as there was no penalty for model similarity. However, as $\lambda$ increased toward a threshold of approximately $0.7$, a visible reduction in ensemble MSE occurred (Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2}, Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_6}, Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_12} and Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6_comparator_traditional}), which coincided with a \textit{slight} increase in $\rho$ (Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2}, Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_6}, Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_12} and Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6}). Thus, moderate diversity effectively reduced the collective error. 
+
+Beyond $\lambda^*$ (around $0.6$ to $0.8$), the ensemble became over-diversified. Graphs of $\rho$ (Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2} to Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2} and Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6} to Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_2_2_2}) showed an exponential spike in $\rho$ when $\lambda$ approximately exceeded $\lambda^*$ (Equation~\ref{equation:lambda_upper_bound}), which triggered a corresponding surge in ensemble MSE (Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2} to Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_2_2_2_2_2_2} and Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6_comparator_traditional} to Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_2_2_2_comparator_mlp}). While deeper architectures (Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2} and Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2}) exhibited more fluctuations, they followed the same trend: performance improved stably until $\lambda \approx 0.9$, after which MSEs began to surge (Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_2_2_2} and Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_2_2_2_2_2_2}). This suggested that forcing excessive diversity compelled base learners to prioritise being ``different'' over being ``accurate'', resulting in a set of over-scattered predictions that yielded meaningless and inaccurate ensemble mean. Thus, $\lambda$ should be kept below its upper bound to utilise the benefits of NCL. 
+
+From Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2} and Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_6}, larger $m$ did have a smaller $\lambda_{upper\_bound}$ as the green line had its spike first, followed by the orange line and lastly, the blue line. Although the observed value of $\lambda_{upper\_bound}$ did not match the theoretical $\lambda_{upper\_bound}$ value stated in Section~\ref{subsec:background_ncl} exactly, the observations still confirmed the relationship between $m$ and $\lambda_{upper\_bound}$. 
+
+In Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2} and Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2}, the ensemble MSE at $\lambda = 1$ converged toward the MSE of the single control MLP. This empirically supported that when $\lambda = 1$, the NCL ensemble mathematically collapsed into a single estimator. The minor difference between the ensemble and control MSEs were likely due to the variance introduced by different random seeds and training data shuffling. 
+
+\paragraph{Effect of network complexity}
+As $m$ increases, using simpler base learners improves ensemble performance. This suggests that diversity is most beneficial when individual learners are weak and diversity compensates for high individual bias through a broader, non-redundant search of the solution space. Moreover, ensemble model of simpler models have a higher $\lambda^*$. 
+
+In Section~\ref{subsec:stage_2}, more complex models consistently dominated. However, the introduction of the diversity constraint $p_i$ reversed this trend. Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6_comparator_traditional} showed that while complex 12-node base learners were superior at low penalty values ($\lambda < 0.6$), their performance dropped as $\lambda$ approached $0.8$. At this higher threshold, the 2-node ensemble, which was the worst, became the most accurate and the 12-node ensemble became the least effective. This suggested that with NCL and a correctly tuned $\lambda$, simpler architectures can achieve competitive results while saving significant training time and computational resources. This finding is also supported by existing literature. Brown et al.\ \cite{brown2005managing} observed a similar shift in their Figure~14, where simpler ensembles (2--6 base learners) outperformed larger ones (10--12 learners) once the penalty coefficient $\gamma$ exceeded $0.5$. Likewise, Eastwood et al. \cite{eastwood2006lambda} demonstrated that on synthetic datasets (the bottom-right graph of Figure~6), the optimal architecture shifted from 20 hidden nodes to 10 nodes as $\lambda$ increased from $0$ to $1$. 
+
+Furthermore, the data revealed an inverse relationship between base learner complexity and $\lambda^*$. As architectural complexity increased, $\lambda^*$ decreased: 
+\begin{enumerate}
+    \item \textbf{2-node model (Simple)} \\
+    $\lambda^* \approx 0.8$ (Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2})
+
+    \item \textbf{6-node model (Medium)} \\
+    $\lambda^* \approx 0.7$ (Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_6})
+
+    \item \textbf{12-node model (Complex)} \\
+    $\lambda^* \approx 0.5$ (Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_12})
+\end{enumerate}
+
+This suggested that complex models were more sensitive to the NCL penalty whereas simpler models had more ``room'' to explore diverse search spaces without sacrificing their predictive capabilities. 
+
+\paragraph{Effect of ensemble size}
+When $m$ is larger, increasing $\lambda$ (assuming $\lambda < \lambda^*$) gives a larger diversity and more stable improvement in ensemble performance. 
+
+A larger $m$ dampened the fluctuations associated with NCL training. From Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2}, Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2} and Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2}, ensemble models with only 2 or 6 base learners exhibited high sensitivity to changes in $\lambda$, leading to fluctuated MSE curves. In contrast, ensembles with 12 base learners showed a more consistent and smooth MSE curve as $\lambda$ increased. 
+
+The same magnitude change in $\lambda$ scaled the diversity more when $m$ was larger. From Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2}, Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_6}, Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_12} and Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2}, for any fixed increase in $\lambda$, the 12-base-learner ensemble consistently produced a significantly larger surge in $\rho$ compared to the 2-base-learner or 6-base-learner configurations. Mathematically, this aligned with Equation~\ref{equation:diversity_coefficient}, where a larger $m$ amplified the average distance between individual base learner predictions ($\hat{y}_i$) and the ensemble mean ($\bar{y}$). Essentially, the NCL penalty term $(\hat{y}_i - \bar{y})^2$ exerts a more powerful repulsive force in a larger population and a larger system is more sensitive to diversity penalty. 
+
+\paragraph{$\rho$ should not be maximised}
+Higher diversity does not always guarantee better results. Thus, one should not focus on maximising it but instead, strive for a balance where base learners are diverse enough to be unique but not so different to avoid losing accuracy. 
+
+As $\lambda$ increased, the introduction of penalty term helped both simple and complex ensembles improve and outperform the control MLP. However, when diversity was over-emphasised ($\lambda > 0.6$), the performance of complex ensembles and simple ensembles both degraded rapidly (e.g. Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_6_comparator_mlp} and Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_2_2_2_comparator_mlp}), eventually falling behind the accuracy of a single control MLP. At this stage of over-diversification, base learners prioritised uniqueness over accuracy. By actively avoiding the ground truth to stay different, their average prediction drifted significantly away from the true value. 
+
+\paragraph{Double descent in ensemble MSE and $\rho$}
+Interestingly, the diversity coefficient $\rho$ (and thus, ensemble MSE) decreases suddenly when $\lambda$ reached extremely large values. Furthermore, when $m$ is larger, drops of $\rho$ and ensemble MSE occur at a larger magnitude and at a larger value of $\lambda$. 
+
+From Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_architecture_2}, Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_architecture_6} and Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_architecture_12}, once $\lambda$ exceeded a critical threshold, the diversity coefficient $\rho$ decreased drastically, dropping from peaks near $2.5$ to values as low as $0.25$. From Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_2} and Figure~\ref{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_6}, ensemble MSE dropped accordingly. The magnitude and timing of this descent were strongly moderated by $m$: 
+\begin{enumerate}
+    \item \textbf{Sensitivity To Ensemble Size} \\
+    The drop was more significant in larger ensembles as when $m = 12$, the decrease was the most severe compared to $m = 2$ and $m = 6$. 
+
+    \item \textbf{Shifted Threshold} \\
+    Larger ensembles appeared more resilient to this collapse, as the ``breaking point'' occurred at higher $\lambda$ values. In Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_architecture_2}, the diversity decrease triggered at $\lambda = 1.2$ for $m = 6$ but was delayed until $\lambda = 1.4$ for $m = 12$. 
+\end{enumerate}
+
+
+% ================================ Images ================================
+
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE. Base learners had 1 hidden layer of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on MSE. Base learners had 1 hidden layer of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_2}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE. Base learners had 1 hidden layer of 6 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_6}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on MSE. Base learners had 1 hidden layer of 6 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_6}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_12.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE. Base learners had 1 hidden layer of 12 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_12}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_12.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on MSE. Base learners had 1 hidden layer of 12 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_12}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE. Base learners had 3 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_2_2_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on MSE. Base learners had 3 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_2_2_2}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE. Base learners had 6 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_2_2_2_2_2_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on MSE. Base learners had 6 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_architecture_2_2_2_2_2_2}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on diversity coefficient. Base learners had 1 hidden layer of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_architecture_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on diversity coefficient. Base learners had 1 hidden layer of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_architecture_2}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on diversity coefficient. Base learners had 1 hidden layer of 6 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_6}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_architecture_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on diversity coefficient. Base learners had 1 hidden layer of 6 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_architecture_6}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_12.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on diversity coefficient. Base learners had 1 hidden layer of 12 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_12}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_architecture_12.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on diversity coefficient. Base learners had 1 hidden layer of 12 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_architecture_12}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on diversity coefficient. Base learners had 3 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on diversity coefficient. Base learners had 6 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6_comparator_traditional.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on diversity coefficient. Each ensemble model has 6 base learners. Base learners had 1 hidden layer of 6 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6_comparator_traditional}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_6_comparator_traditional.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on diversity coefficient. Each ensemble model has 6 base learners. Base learners had 1 hidden layer of 6 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_6_comparator_traditional}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_2_2_2_comparator_traditional.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE. Each ensemble model always has 6 base learners. Base learners had 6 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_2_2_2_comparator_traditional}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_2_2_2_comparator_traditional.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on MSE. Each ensemble model always has 6 base learners. Base learners had 6 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_2_2_2_comparator_traditional}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6_comparator_mlp.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on diversity coefficient. Each ensemble model has 6 base learners. Base learners had 1 hidden layer of 6 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6_comparator_mlp}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_6_comparator_mlp.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on diversity coefficient. Each ensemble model has 6 base learners. Base learners had 1 hidden layer of 6 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_6_comparator_mlp}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_2_2_2_comparator_mlp.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE. Each ensemble model always has 6 base learners. Base learners had 6 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_2_2_2_comparator_mlp}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_2_2_2_comparator_mlp.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on MSE. Each ensemble model always has 6 base learners. Base learners had 6 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_mse_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_2_2_2_comparator_mlp}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on diversity coefficient. Each ensemble model has 6 base learners. Base learners had 1 hidden layer of 6 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_6}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on diversity coefficient. Each ensemble model has 6 base learners. Base learners had 1 hidden layer of 6 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden nodes in the hidden layer. }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_6}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_2_2_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on diversity coefficient. Each ensemble model always has 6 base learners. Base learners had 6 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_ensemble_size_6_architecture_2_2_2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/static-ncl/static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_2_2_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0.8, 1.5]$) on diversity coefficient. Each ensemble model always has 6 base learners. Base learners had 6 hidden layers of 2 hidden nodes and were trained with 400 epochs. They increased their model complexities by increasing number of hidden layers (each layer always has 2 hidden nodes). }
+        \label{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_08_15_fixed_ensemble_size_6_architecture_2_2_2}
+    \end{minipage}
+\end{figure}
+
+
+\subsection{Integrate NEAT with NCL}
+\label{subsec:evaluation_neat_ncl}
+\subsubsection{Expected Observations}
+\paragraph{Performance improvement over evolutionary generations}
+Consistent with the principles of biological evolution, NEAT-NCL refines the population through selective pressure and genetic variation. By selecting high-fitness individuals for reproduction and applying random mutations (e.g. topological structural changes or weight adjustments), the population adapts to the underlying data structure. Consequently, the collective ensemble MSE should decrease. 
+
+\paragraph{Linear relationship between $\lambda$ and $-D$}
+The implementation of a dynamic $\lambda$ serves as a regulatory mechanism to balance the trade-off between individual accuracy and diversity. By scaling $\lambda$ inversely with the current population diversity $D$, the optimisation objective adaptively shifts its priority. At early stages of evolution, randomly initialised base learners exhibit low functional diversity. A high $\lambda$ value (approaching $\lambda_{\max}$) is applied to force the exploration of the solution space. As NCL drives the population toward a more heterogeneous state, the increase in $D$ triggers a reduction in $\lambda$, allowing the base learners to focus on minimising individual MSE. Equation~\ref{equation:neat_ncl_dynamic_lambda} ensures that $\lambda$ is strictly bounded between $[\lambda_{\min}, \lambda_{\max}]$, preventing the ``over-diversification'' observed in Section~\ref{subsec:stage_3}. Since $\lambda$ is a linear function of $-D$, the graph of $\lambda$ against $D$ is expected to yield a negatively-sloped straight line. 
+
+\paragraph{Different values of optimal $\lambda$}
+The dynamic calculation of $\lambda$ using $\frac{D}{D_{max}}$ ensures that the NCL pressure is always relative to the architectural complexity and capacity of the current ensemble model. From Section~\ref{subsubsec:neat_ncl_population_diversity}, $D$ depends on population-dependent variables like genetic distance and $m$, which vary among different NEAT-NCL ensemble models. Thus, each ensemble model should have different values of $D$ and $D_{max}$. Since $\lambda_{max}$ and $\lambda_{min}$ are fixed, different ensemble models should have different values of $\lambda$ after convergence. 
+
+\paragraph{More diversity seen in NEAT-NCL base learners}
+NEAT-NCL creates a more diverse group of learners because it combines correlation penalty with structural evolution. In an arithmetic-mean-ensemble, learners are trained separately and often become redundant because they lack diversity. Standard NCL ensemble models improve on this by using a penalty term to encourage uniqueness but learners are still restricted by a fixed architecture. NEAT-NCL base learners are the most diverse because they vary in both their connection weights and their physical shapes (i.e. unique number of hidden nodes and topologies). 
+
+
+\subsubsection{Experiments and Observations}
+\label{subsubsec:evaluation_neat_ncl_observations}
+\paragraph{Effect of evolution length on different attributes}
+As evolution progresses, ensemble MSE decreases due to increase in raw fitness and adjusted fitness of base learners. Evolution also increases $\sigma$ and sharing factor but does not affect $\lambda$ directly. 
+
+Ensemble MSE first dropped sharply from $0.65$ to $0.4$ in the first 10 generations but then stopped improving after 30 generations, as illustrated in Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_50}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_100}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_150}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_200} and Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_250}. Figure~\ref{fig:neat_ncl_unconnected_average_raw_fitness_against_generation_index_0_480} and Figure~\ref{fig:neat_ncl_unconnected_average_adjusted_fitness_against_generation_index_0_480} demonstrated initial gains followed by saturations in complexity and fitness were the cause. The same pattern was also observed in Sheng et al.\ \cite{sheng2017niching}. In Graph~a and Graph~e of Figure~4 of their experiments, testing errors dropped drastically at the first 20 generations but stopped afterwards. As base learners evolved, their raw fitness increased because stronger models were selected to reproduce. Figure~\ref{fig:neat_ncl_unconnected_average_raw_fitness_against_generation_index_0_480} shows that fitness improved from $-0.5$ to $-0.35$ within the first 20 generations before reaching a saturation point. Smaller ensembles achieved higher raw fitness but showed more fluctuation compared to larger ensembles. Lower fitness in larger groups occurred because they were more diverse due to NCL, as shown in Figure~\ref{fig:static_ncl_diversity_coefficient_against_correlation_penalty_coefficient_0_1_fixed_architecture_2}, Figure~\ref{fig:neat_ncl_partial_direct_average_raw_fitness_against_generation_index_0_480} and Figure~\ref{fig:neat_ncl_full_direct_average_raw_fitness_against_generation_index_0_480}, regardless of how connections were initialised. Adjusted fitness followed a similar path, as seen in Figure~\ref{fig:neat_ncl_unconnected_average_adjusted_fitness_against_generation_index_0_480}, Figure~\ref{fig:neat_ncl_partial_direct_average_adjusted_fitness_against_generation_index_0_480} and Figure~\ref{fig:neat_ncl_full_direct_average_adjusted_fitness_against_generation_index_0_480}. Substantial variations in adjusted fitness were due to sharing factor ($adjusted\_fitness = \frac{raw\_fitness}{sharing\_factor}$). 
+
+$\sigma$ also increased initially as it increased from $0.13$ to $0.2$ in the first 10 generations (Figure~\ref{fig:neat_ncl_unconnected_average_niche_radius_against_generation_index_0_480}). Initially, randomly initialised models were similar but NCL pushed them apart, increasing the average distance $d_{ij}$ between them, increasing $\sigma$ initially. While $m$ did not affect $\sigma$ directly, larger ensembles produced more stable results because it is harder for a large group to reach an extreme average (Figure~\ref{fig:neat_ncl_unconnected_average_niche_radius_against_generation_index_0_480}). This increase in $\sigma$ also caused the sharing factor to rise and saturate after 20 generations (Figure~\ref{fig:neat_ncl_unconnected_average_sharing_factor_against_generation_index_0_480}). Larger ensembles had higher sharing factors because more models were likely to be within the radius of one another bounded by $\sigma$. 
+
+Lastly, $\lambda$ remained constant within the range $[0.4, 0.8]$ throughout evolutions (Figure~\ref{fig:neat_ncl_unconnected_correlation_penalty_coefficient_against_generation_index_0_480}), suggesting $\lambda$ is independent of the number of evolution epochs. 
+
+\paragraph{Effect of niche radius}
+Increasing $\sigma$ has no direct effect on the sharing factor. However, increasing $\sigma$ leads to a decrease in adjusted fitness and increase in $D$. 
+
+Increasing $\sigma$ did not significantly change the sharing factor. Figure~\ref{fig:neat_ncl_unconnected_average_sharing_factor_against_average_niche_radius} showed that for any given $m$, the sharing factor stayed roughly the same even as $\sigma$ increased. For example, with $m = 50$, the sharing factor consistently stayed around $10$.
+
+However, increasing $\sigma$ decreased adjusted fitness slightly, i.e. worse performance. This effect was more noticeable in smaller ensembles. From Figure~\ref{fig:neat_ncl_unconnected_average_adjusted_fitness_against_average_niche_radius}, for a group of $50$, adjusted fitness fell from $-0.3$ to $-0.5$ as $\sigma$ grew from $0.15$ to $0.25$. For a group of $250$, adjusted fitness fell from $-0.35$ to $-0.45$ as $\sigma$ grew from $0.18$ to $0.22$. 
+
+Additionally, increasing $\sigma$ slightly improved $D$, which was more prominent in smaller ensembles. Figure~\ref{fig:neat_ncl_unconnected_population_diversity_against_average_niche_radius} indicated that for $m = 50$, $D$ increased from near $0$ to $0.1$ as $\sigma$ moved from $0.05$ to $0.25$. For $m = 250$, the increase was much smaller, only rising from $0.05$ to $0.08$ when $\sigma$ increased from $0.18$ to $0.22$. 
+
+\paragraph{Effect of ensemble size}
+Increasing $m$ reduces fluctuations in the ensemble attributes but worsens the performance of individual base learners. Increasing $m$ leads to a smaller final $D_{max}$, a smaller converged $\lambda$ and a larger sharing factor. However, it had no direct effect on diversities across base learners ($\rho$) and across populations ($D$). 
+
+Increasing $m$ significantly reduced fluctuations in model attributes. From Figure~\ref{fig:neat_ncl_unconnected_average_raw_fitness_against_generation_index_0_480}, Figure~\ref{fig:neat_ncl_unconnected_average_adjusted_fitness_against_generation_index_0_480}, Figure~\ref{fig:neat_ncl_unconnected_average_niche_radius_against_generation_index_0_480}, Figure~\ref{fig:neat_ncl_unconnected_population_diversity_against_generation_index_0_480} and Figure~\ref{fig:neat_ncl_unconnected_correlation_penalty_coefficient_against_generation_index_0_480}, larger ensembles ($m = 250$) were more stable than smaller ones ($m = 50$). This behaviour was consistent with Theorem~\ref{theorem:law_of_large_numbers}, which also explained why the data points for larger ensembles appeared more concentrated in Figure~\ref{fig:neat_ncl_unconnected_average_sharing_factor_against_average_niche_radius}, Figure~\ref{fig:neat_ncl_unconnected_average_adjusted_fitness_against_average_niche_radius} and Figure~\ref{fig:neat_ncl_unconnected_population_diversity_against_average_niche_radius}. 
+
+While larger ensembles were more stable, they generally had lower individual base learner fitness. Figure~\ref{fig:neat_ncl_unconnected_average_raw_fitness_against_generation_index_0_480} and Figure~\ref{fig:neat_ncl_unconnected_average_adjusted_fitness_against_generation_index_0_480} showed that base learners in a group of $50$ performed better than those in a group of $250$. This is because NCL forced larger groups to be more diverse, which pulled individual models away from the best possible accuracy to ensure the whole group stayed unique. 
+
+$D_{max}$ was smaller for larger ensembles (Figure~\ref{fig:neat_ncl_unconnected_max_population_diversity_against_generation_index_0_480}), dropping from $0.3$ for a size of $50$ to $0.1$ for a size of $250$. Note that some $D_{max}$ in Figure~\ref{fig:neat_ncl_unconnected_max_population_diversity_against_generation_index_0_480} could not be found in Figure~\ref{fig:neat_ncl_unconnected_correlation_penalty_coefficient_against_generation_index_0_480} because $D$ was recorded only every 10 generations. Thus, it might have missed generations at which the current $D_{max}$ occurred. 
+
+Larger ensembles generally used a smaller $\lambda$ after convergence. For example, an ensemble model of size 50 used $\lambda \approx 0.8$ while an ensemble model of size 250 used $\lambda \approx 0.5$. This is because larger ensembles had a smaller $D_{max}$ (Figure~\ref{fig:neat_ncl_unconnected_max_population_diversity_against_generation_index_0_480}). This finding is similar to Equation~\ref{equation:lambda_upper_bound}, where larger $m$ has smaller $\lambda_{upper\_bound}$. This suggests a potential correlation between converged $\lambda$ and $\lambda_{upper\_bound}$ and further studies could be explored with additional time. 
+
+The sharing factor was also much higher and more concentrated (due to Theorem~\ref{theorem:law_of_large_numbers}) in larger ensembles. While the sharing factor fluctuated with the same extent despite $m$ (Figure~\ref{fig:neat_ncl_unconnected_average_sharing_factor_against_generation_index_0_480}), Figure~\ref{fig:neat_ncl_unconnected_average_sharing_factor_against_average_niche_radius}, Figure~\ref{fig:neat_ncl_unconnected_average_adjusted_fitness_against_average_sharing_factor} and Figure~\ref{fig:neat_ncl_unconnected_population_diversity_against_average_sharing_factor} all highlighted this phenomenon. $\sigma$ serves as a distance threshold that effectively splits the population. The formula $n_{\sigma} = p \cdot m$ can be defined as the number of base learners close enough to increase the sharing factor. Here, $p$ is a constant representing the probability that any given learner falls within that radius of the target learner and is around $0.5$ because $\sigma$ is the average distance between all base learners. Having more models (larger $m$) naturally led to more increments (higher $n_{\sigma}$). Thus, the sharing factor scaled with $m$. 
+
+Interestingly, increasing $m$ had no direct effect on diversity across base learners and their populations. Figure~\ref{fig:neat_ncl_unconnected_population_diversity_against_average_sharing_factor} showed that $D$ had value around $0.05$ despite $m$. From Figure~\ref{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_50}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_100}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_150}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_200} and Figure~\ref{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_250}, increasing $m$ did not change $\rho$, suggesting that the average distances across base learners ($\rho$) and populations ($D$) were not affected by $m$. 
+
+\paragraph{Effect of population diversity}
+Increasing $D$ leads to a linear decrease in $\lambda$ but worsens ensemble performance. 
+
+When $D$ increased, $\lambda$ decreased. Since $D_{max}$ usually stayed constant (Figure~\ref{fig:neat_ncl_unconnected_max_population_diversity_against_generation_index_0_480}), Equation~\ref{equation:neat_ncl_dynamic_lambda} functioned like a linear equation ($\lambda = -(\frac{\lambda_{max} - \lambda_{min}}{D_{max}})D + \lambda_{max}$). The straight, negatively-sloped lines in Figure~\ref{fig:neat_ncl_unconnected_correlation_penalty_coefficient_against_population_diversity} confirmed the inverse relationship between $D$ and $m$ and that, the dynamic $\lambda$ was implemented correctly. Different $m$ had different slopes because $D_{max}$ changed based on $m$ (Figure~\ref{fig:neat_ncl_unconnected_max_population_diversity_against_generation_index_0_480}), which altered the steepness of the linear drop. 
+
+However, higher $D$ also increased ensemble MSE. Figure~\ref{fig:neat_ncl_unconnected_mse_against_population_diversity} illustrated this positive correlation between ensemble MSE and $D$. Consistent with findings in Section~\ref{subsubsec:evaluation_ncl_observations}, moderate diversity should be enforced to maximise ensemble predictive capability. 
+
+\paragraph{NEAT-NCL is not the best architecture}
+NEAT-NCL base learners are too diverse compared to other ensembles, leading to a lower ensemble MSE. This is supported by the positive correlation between MSE and $\rho$. 
+
+NEAT-NCL performed significantly worse than other MLPs/ensembles. While other models reached a low MSE of approximately $0.05$, NEAT-NCL ensemble stabilised at a much higher MSE of $0.35$ (Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_50}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_100}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_150}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_200} and Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_250}). 
+
+Consistent with findings in Section~\ref{subsubsec:evaluation_ncl_observations}, this poor performance was caused by the extremely high diversity encouraged within the NEAT-NCL population. From Figure~\ref{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_50}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_100}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_150}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_200} and Figure~\ref{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_250}, $\rho$ of NEAT-NCL ranged from $0.001$ to $0.2$, which was significantly higher than the $0.001$ for the arithmetic-mean-ensemble or the $0.003$ for the standard NCL ensemble model. 
+
+\paragraph{Smaller ensemble size is preferred for a NEAT-NCL ensemble model}
+Smallest NEAT-NCL ensemble models perform better due to lower $D$ and higher fitness of individual base learners. 
+
+From Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_50}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_100}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_150}, Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_200} and Figure~\ref{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_250}, an MSE of approximately $0.3$ was achieved when $m = 50$, which was slightly lower than the $0.35$ seen in larger groups. This trend was clearly visible in Figure~\ref{fig:neat_ncl_unconnected_mse_against_population_diversity}, where the smallest $m$ (the blue dots) maintained the lowest $D$ at around $0.05$, leading to a more accurate collective prediction. 
+
+This superior performance was also driven by the higher quality of individual models within smaller groups. Figure~\ref{fig:neat_ncl_unconnected_average_raw_fitness_against_generation_index_0_480} to Figure~\ref{fig:neat_ncl_full_direct_average_adjusted_fitness_against_generation_index_0_480} all showed that base learners achieved their highest raw and adjusted fitness when $m$ was small. Thus, when pressure on diversity was reduced, smaller ensembles could focus more on accuracy, yielding a lower ensemble MSE. 
+
+\paragraph{Simple base learners are preferred}
+A NEAT-NCL base learner should have 0 hidden nodes for this regression task. 
+
+For this specific problem, the most effective base learner architecture proved to be one with no hidden nodes, where input nodes connected directly to the output. Figure~\ref{fig:neat_ncl_unconnected_average_active_hidden_node_num_against_generation_index_0_480} showed that active hidden node counts remained at $0$ throughout the entire evolution, indicating models thrived consistently without adding internal complexity. 
+
+To confirm this was not just a result of starting with empty networks, the experiment was repeated using different setups like \lstinline|partial_direct 0.5| and \lstinline|full_direct|. All models eventually evolved back toward having few or no hidden nodes (Figure~\ref{fig:neat_ncl_partial_direct_average_active_hidden_node_num_against_generation_index_0_480} and Figure~\ref{fig:neat_ncl_full_direct_average_active_hidden_node_num_against_generation_index_0_480}). This matched the observation in Section~\ref{subsubsec:evaluation_baseline_observations} that adding hidden layers hinder performance for this task. 
+
+
+% ================================ Images ================================
+
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_average_raw_fitness_against_generation_index_0_480.png}
+        \caption{Average raw fitness of a base learner throughout generations of evolution (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_average_raw_fitness_against_generation_index_0_480}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_average_adjusted_fitness_against_generation_index_0_480.png}
+        \caption{Average adjusted fitness of a base learner throughout generations of evolution (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_average_adjusted_fitness_against_generation_index_0_480}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/partial-direct/neat_ncl_average_raw_fitness_against_generation_index_0_480.png}
+        \caption{Average raw fitness of a base learner throughout generations of evolution (\lstinline[language=ini]|initial_connection = partial_direct 0.5|)}
+        \label{fig:neat_ncl_partial_direct_average_raw_fitness_against_generation_index_0_480}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/partial-direct/neat_ncl_average_adjusted_fitness_against_generation_index_0_480.png}
+        \caption{Average adjusted fitness of a base learner throughout generations of evolution (\lstinline[language=ini]|initial_connection = partial_direct 0.5|)}
+        \label{fig:neat_ncl_partial_direct_average_adjusted_fitness_against_generation_index_0_480}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/full-direct/neat_ncl_average_raw_fitness_against_generation_index_0_480.png}
+        \caption{Average raw fitness of a base learner throughout generations of evolution (\lstinline[language=ini]|initial_connection = full_direct|)}
+        \label{fig:neat_ncl_full_direct_average_raw_fitness_against_generation_index_0_480}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/full-direct/neat_ncl_average_adjusted_fitness_against_generation_index_0_480.png}
+        \caption{Average adjusted fitness of a base learner throughout generations of evolution (\lstinline[language=ini]|initial_connection = full_direct|)}
+        \label{fig:neat_ncl_full_direct_average_adjusted_fitness_against_generation_index_0_480}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_average_niche_radius_against_generation_index_0_480.png}
+        \caption{Average niche radius throughout generations of evolution (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_average_niche_radius_against_generation_index_0_480}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_average_sharing_factor_against_generation_index_0_480.png}
+        \caption{Average sharing factor of a base learner throughout generations of evolution (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_average_sharing_factor_against_generation_index_0_480}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_population_diversity_against_generation_index_0_480.png}
+        \caption{$D$ throughout generations of evolution (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_population_diversity_against_generation_index_0_480}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_max_population_diversity_against_generation_index_0_480.png}
+        \caption{$D_{max}$ throughout generations of evolution (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_max_population_diversity_against_generation_index_0_480}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_correlation_penalty_coefficient_against_generation_index_0_480.png}
+        \caption{$\lambda$ throughout generations of evolution (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_correlation_penalty_coefficient_against_generation_index_0_480}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_average_sharing_factor_against_average_niche_radius.png}
+        \caption{Effect of niche radius on the sharing factor of a base learner (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_average_sharing_factor_against_average_niche_radius}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_average_adjusted_fitness_against_average_niche_radius.png}
+        \caption{Effect of niche radius on the adjusted fitness of a base learner (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_average_adjusted_fitness_against_average_niche_radius}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_population_diversity_against_average_niche_radius.png}
+        \caption{Effect of niche radius on population diversity (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_population_diversity_against_average_niche_radius}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_average_adjusted_fitness_against_average_sharing_factor.png}
+        \caption{Effect of sharing factor on the adjusted fitness of a base learner (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_average_adjusted_fitness_against_average_sharing_factor}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_population_diversity_against_average_sharing_factor.png}
+        \caption{Effect of sharing factor on population diversity (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_population_diversity_against_average_sharing_factor}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_correlation_penalty_coefficient_against_population_diversity_ratio.png}
+        \caption{Effect of $\frac{D}{D_{max}}$ on $\lambda$ (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_correlation_penalty_coefficient_against_population_diversity_ratio}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_correlation_penalty_coefficient_against_population_diversity.png}
+        \caption{Effect of $D$ on $\lambda$ (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_correlation_penalty_coefficient_against_population_diversity}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_population_diversity.png}
+        \caption{Comparison of ensemble MSE with population diversity (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_population_diversity}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_average_active_hidden_node_num_against_generation_index_0_480.png}
+        \caption{Average number of active hidden nodes of a base learner throughout generations of evolution (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_average_active_hidden_node_num_against_generation_index_0_480}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/partial-direct/neat_ncl_average_active_hidden_node_num_against_generation_index_0_480.png}
+        \caption{Average number of active hidden nodes of a base learner throughout generations of evolution (\lstinline[language=ini]|initial_connection = partial_direct 0.5|)}
+        \label{fig:neat_ncl_partial_direct_average_active_hidden_node_num_against_generation_index_0_480}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/full-direct/neat_ncl_average_active_hidden_node_num_against_generation_index_0_480.png}
+        \caption{Average number of active hidden nodes of a base learner throughout generations of evolution (\lstinline[language=ini]|initial_connection = full_direct|)}
+        \label{fig:neat_ncl_full_direct_average_active_hidden_node_num_against_generation_index_0_480}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_diversity_coefficient_fixed_ensemble_size_50.png}
+        \caption{Comparison of ensemble MSE with diversity coefficient when the ensemble size is 50 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_50}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_generation_index_0_480_fixed_ensemble_size_50.png}
+        \caption{Ensemble MSE throughout generations of evolution when the ensemble size is 50 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_50}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_diversity_coefficient_fixed_ensemble_size_100.png}
+        \caption{Comparison of ensemble MSE with diversity coefficient when the ensemble size is 100 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_100}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_generation_index_0_480_fixed_ensemble_size_100.png}
+        \caption{Ensemble MSE throughout generations of evolution when the ensemble size is 100 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_100}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_diversity_coefficient_fixed_ensemble_size_150.png}
+        \caption{Comparison of ensemble MSE with diversity coefficient when the ensemble size is 150 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_150}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_generation_index_0_480_fixed_ensemble_size_150.png}
+        \caption{Ensemble MSE throughout generations of evolution when the ensemble size is 150 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_150}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_diversity_coefficient_fixed_ensemble_size_200.png}
+        \caption{Comparison of ensemble MSE with diversity coefficient when the ensemble size is 200 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_200}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_generation_index_0_480_fixed_ensemble_size_200.png}
+        \caption{Ensemble MSE throughout generations of evolution when the ensemble size is 200 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_200}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_diversity_coefficient_fixed_ensemble_size_250.png}
+        \caption{Comparison of ensemble MSE with diversity coefficient when the ensemble size is 250 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_diversity_coefficient_fixed_ensemble_size_250}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/neat-ncl/unconnected/neat_ncl_mse_against_generation_index_0_480_fixed_ensemble_size_250.png}
+        \caption{Ensemble MSE throughout generations of evolution when the ensemble size is 250 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:neat_ncl_unconnected_mse_against_generation_index_0_480_fixed_ensemble_size_250}
+    \end{minipage}
+\end{figure}
+
+
+\subsection{Analyse Different Aggregators}
+\label{subsec:evaluation_voter}
+\subsubsection{Expected Observations}
+\paragraph{Arithmetic-mean-aggregator and median-aggregator are more similar and better}
+The arithmetic-mean-aggregator and the median-aggregator should produce more similar predictions than the neural-network-aggregator because mean and median treat the learners' contributions relatively equally. 
+
+In contrast, the neural-network-aggregator assigns different weights to learners, causing the final prediction to rely more heavily on specific groups. Applying it on a NCL ensemble model should give worse ensemble performance because it puts too much attention on inaccurate learners forced to be diverse. Individual mistakes are not averaged out effectively, leading to a higher ensemble MSE. 
+
+\paragraph{Small ensemble MSE despite aggregator used}
+Since all data were normalised using \texttt{MinMaxScaler}, all input features and labels stayed within a very small, consistent range. Thus, the mathematical scale of $\left|\hat{y}_i - y\right|$ and MSE should remain small. 
+
+
+\subsubsection{Experiments and Observations}
+\label{subsubsec:evaluation_voter_observations}
+\paragraph{Arithmetic-mean-aggregator and median-aggregator are similar}
+Overall, an arithmetic-mean-aggregator and a median-aggregator give similar ensemble performance but the latter performs better consistently in a few experiments of the NEAT-NCL ensemble model. 
+
+For all ensembles, the arithmetic-mean-aggregator and the median-aggregator showed very similar performance. The blue and orange lines representing these two methods stayed extremely close to each other in all experiments (Figure~\ref{fig:voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_400} to Figure~\ref{fig:voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400}, Figure~\ref{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_fixed_epoch_num_400_fixed_ensemble_size_2} to Figure~\ref{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_12} and Figure~\ref{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_50_unconnected} to Figure~\ref{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_full_direct}). 
+
+In certain cases, particularly in the NEAT-NCL experiments shown in Figure~\ref{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_unconnected}, Figure~\ref{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_partial_direct} and Figure~\ref{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_full_direct}, the median-aggregator performed better than the arithmetic-mean-aggregator. This suggested that median could be more effective at ignoring outliers in larger populations. Nevertheless, since the two methods were so evenly matched across most other experiments, it was difficult to definitively say which one was superior overall. 
+
+\paragraph{Poor and fluctuated ensemble performance with neural-network-aggregator}
+A neural-network-aggregator gives the poorest and most unstable ensemble performance. 
+
+From Figure~\ref{fig:voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_400} to Figure~\ref{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_12}, the green line representing this method stayed much higher than the others, indicating a significantly higher MSE. 
+
+Furthermore, the neural-network-aggregator was also much less stable. While the mean and median methods stayed relatively flat, the green line fluctuated heavily as hyperparameters like $m$ or $\lambda$ changed (Figure~\ref{fig:voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_400} to Figure~\ref{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_12}), suggesting that using a neural network to combine predictions made the ensemble model unstable. 
+
+\paragraph{Median-aggregator gave more stable NEAT-NCL ensemble performance}
+For a NEAT-NCL ensemble model, a median-aggregator was more stable than an arithmetic-mean-aggregator. This phenomenon is more visible when $m$ is larger. 
+
+From Figure~\ref{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_unconnected}, Figure~\ref{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_150_partial_direct}, Figure~\ref{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_partial_direct} and Figure~\ref{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_full_direct}, the orange line stayed much steadier than the blue line. The high level of diversity introduced in a NEAT-NCL ensemble could create outlier base learners and very inaccurate results. While an arithmetic-mean is easily pulled away by extreme errors, the median is more robust and ignores them, making it a more reliable choice for large, diverse ensembles. 
+
+
+% ================================ Images ================================
+
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/traditional/voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on MSE of a traditional ensemble. Base learners had 1 layer of 2 hidden nodes and were trained with 400 epochs. }
+        \label{fig:voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_fixed_epoch_num_400}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/traditional/voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_6_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on MSE of a traditional ensemble. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. }
+        \label{fig:voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_6_fixed_epoch_num_400}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/traditional/voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_12_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on MSE of a traditional ensemble. Base learners had 1 layer of 12 hidden nodes and were trained with 400 epochs. }
+        \label{fig:voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_12_fixed_epoch_num_400}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/traditional/voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on MSE of a traditional ensemble. Base learners had 3 layers of 2 hidden nodes and were trained with 400 epochs. }
+        \label{fig:voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_fixed_epoch_num_400}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/traditional/voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400.png}
+        \caption{Effect of ensemble size on MSE of a traditional ensemble. Base learners had 6 layers of 2 hidden nodes and were trained with 400 epochs. }
+        \label{fig:voter_traditional_mse_against_ensemble_size_2_16_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_fixed_epoch_num_400_fixed_ensemble_size_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 1 layer of 2 hidden nodes and were trained with 400 epochs. Ensemble size was 2. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_fixed_epoch_num_400_fixed_ensemble_size_2}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_6_fixed_epoch_num_400_fixed_ensemble_size_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. Ensemble size was 2. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_6_fixed_epoch_num_400_fixed_ensemble_size_2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_12_fixed_epoch_num_400_fixed_ensemble_size_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 1 layer of 12 hidden nodes and were trained with 400 epochs. Ensemble size was 2. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_12_fixed_epoch_num_400_fixed_ensemble_size_2}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 3 layers of 2 hidden nodes and were trained with 400 epochs. Ensemble size was 2. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_2}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_2.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 6 layers of 2 hidden nodes and were trained with 400 epochs. Ensemble size was 2. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_2}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_fixed_epoch_num_400_fixed_ensemble_size_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 1 layer of 2 hidden nodes and were trained with 400 epochs. Ensemble size was 6. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_fixed_epoch_num_400_fixed_ensemble_size_6}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_6_fixed_epoch_num_400_fixed_ensemble_size_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 1 layers of 6 hidden nodes and were trained with 400 epochs. Ensemble size was 6. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_6_fixed_epoch_num_400_fixed_ensemble_size_6}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_12_fixed_epoch_num_400_fixed_ensemble_size_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 1 layer of 12 hidden nodes and were trained with 400 epochs. Ensemble size was 6. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_12_fixed_epoch_num_400_fixed_ensemble_size_6}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 3 layers of 2 hidden nodes and were trained with 400 epochs. Ensemble size was 6. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_6}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_6.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 6 layer of 2 hidden nodes and were trained with 400 epochs. Ensemble size was 6. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_6}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_fixed_epoch_num_400_fixed_ensemble_size_12.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 1 layer of 2 hidden nodes and were trained with 400 epochs. Ensemble size was 12. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_fixed_epoch_num_400_fixed_ensemble_size_12}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_6_fixed_epoch_num_400_fixed_ensemble_size_12.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. Ensemble size was 12. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_6_fixed_epoch_num_400_fixed_ensemble_size_12}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_12_fixed_epoch_num_400_fixed_ensemble_size_12.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 1 layer of 12 hidden nodes and were trained with 400 epochs. Ensemble size was 12. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_12_fixed_epoch_num_400_fixed_ensemble_size_12}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_12.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 3 layers of 2 hidden nodes and were trained with 400 epochs. Ensemble size was 12. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_12}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/static-ncl/voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_12.png}
+        \caption{Effect of correlation penalty coefficient (in the range $[0, 1]$) on MSE of a NCL ensemble model. Base learners had 6 layers of 2 hidden nodes and were trained with 400 epochs. Ensemble size was 12. }
+        \label{fig:voter_static_ncl_mse_against_correlation_penalty_coefficient_0_1_fixed_architecture_2_2_2_2_2_2_fixed_epoch_num_400_fixed_ensemble_size_12}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/unconnected/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_50_unconnected.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 50 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_50_unconnected}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/unconnected/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_100_unconnected.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 100 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_100_unconnected}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/unconnected/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_150_unconnected.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 150 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_150_unconnected}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/unconnected/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_200_unconnected.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 200 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_200_unconnected}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/unconnected/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_unconnected.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 250 (\lstinline[language=ini]|initial_connection = unconnected|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_unconnected}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/partial-direct/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_50_partial_direct.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 50 (\lstinline[language=ini]|initial_connection = partial_direct 0.5|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_50_partial_direct}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/partial-direct/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_100_partial_direct.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 100 (\lstinline[language=ini]|initial_connection = partial 0.5|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_100_partial_direct}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/partial-direct/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_150_partial_direct.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 150 (\lstinline[language=ini]|initial_connection = partial_direct 0.5|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_150_partial_direct}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/partial-direct/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_200_partial_direct.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 200 (\lstinline[language=ini]|initial_connection = partial 0.5|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_200_partial_direct}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/partial-direct/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_partial_direct.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 250 (\lstinline[language=ini]|initial_connection = partial_direct 0.5|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_partial_direct}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/full-direct/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_50_full_direct.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 50 (\lstinline[language=ini]|initial_connection = full_direct|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_50_full_direct}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/full-direct/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_100_full_direct.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 100 (\lstinline[language=ini]|initial_connection = full_direct|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_100_full_direct}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/full-direct/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_150_full_direct.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 150 (\lstinline[language=ini]|initial_connection = full_direct|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_150_full_direct}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/voter/neat-ncl/full-direct/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_200_full_direct.png}
+        \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 200 (\lstinline[language=ini]|initial_connection = full_direct|)}
+        \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_200_full_direct}
+    \end{minipage}
+\end{figure}
+
+% 1 Image
+\begin{figure}[H]
+    \capstart
+    \centering
+    \includegraphics[width=0.48\textwidth]{img/voter/neat-ncl/full-direct/voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_full_direct.png}
+    \caption{Ensemble MSE of a NEAT-NCL ensemble model throughout generations of evolution when the ensemble size is 250 (\lstinline[language=ini]|initial_connection = full_direct|)}
+    \label{fig:voter_neat_ncl_mse_against_generation_index_0_400_fixed_ensemble_size_250_full_direct}
+\end{figure}
+
+
+\subsection{Study Different Ensemble Topologies}
+\label{subsec:evaluation_recursive}
+\subsubsection{Expected Observations}
+\paragraph{Topological complexity requires ``smart'' aggregator}
+Recursive depth should be beneficial only when the ensemble treats different layers with different importance (i.e. judging which sub-committee is better). Otherwise, extra depths are just redundant. Thus, recursive ensemble should have the most performance improvement when a neural-network-aggregator is used. 
+
+
+\subsubsection{Experiments and Observations}
+\label{subsubsec:evaluation_recursive_observations}
+\paragraph{Similar traditional ensemble performance regardless of recursive architectures}
+In a recursive version of a traditional ensemble (e.g. the arithmetic-mean-ensemble from Section~\ref{subsec:stage_2}), both perfect binary tree and flat tree did not significantly change the final ensemble performance. 
+
+From Figure~\ref{fig:recursive_traditional_mse_against_ensemble_size_8_16_fixed_architecture_6_fixed_epoch_num_400_fixed_aggregator_arithmetic_mean}, Figure~\ref{fig:recursive_traditional_mse_against_ensemble_size_8_16_fixed_architecture_6_fixed_epoch_num_400_fixed_aggregator_median} and Figure~\ref{fig:recursive_traditional_mse_against_ensemble_size_8_16_fixed_architecture_6_fixed_epoch_num_400_fixed_aggregator_nn}, the blue and orange lines were almost identical, suggesting that for recursive arithmetic-mean-, median- and neural-network-ensembles, the way of layering the groups of models was less important than the quality of the base learners themselves. Even when different aggregators were used, changing the structural arrangement of learners did not provide a noticeably lower ensemble MSE as the green line (representing the corresponding non-recursive ensembles) remained to be the lowest line. 
+
+\paragraph{Recursive architecture give NCL ensemble performance improvement conditionally}
+Recursive architecture only gives performance improvement when a neural-network-aggregator is used. Furthermore, a flat tree is more favourable than a perfect binary tree for any given aggregator type. 
+
+Using an arithmetic-mean-aggregator, the non-recursive NCL model from Section~\ref{subsec:stage_3} (the green line) performed much better than recursive ensembles (Figure~\ref{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_arithmetic_mean}), suggesting that recursive structures actually hindered performance when using simple averaging. Nevertheless, increasing $\lambda$ decreased the MSE for both recursive ensembles. Using a median-aggregator, the non-recursive NCL ensemble model from Section~\ref{subsec:stage_3} remained superior (Figure~\ref{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_median}), indicating that recursive architectures was also not a good fit for median-based voting. Interestingly, for a perfect binary tree, increasing $\lambda$ actually increased MSE while it had little effect on the flat tree. In contrast, when a neural-network-aggregator was used, recursive architectures became beneficial (Figure~\ref{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_nn}). Both recursive versions (blue and orange lines) often outperformed the non-recursive NCL model from Section~\ref{subsec:stage_3}. 
+
+There was no significant performance difference between a flat tree and a perfect binary tree when an arithmetic-mean-aggregator was used as the blue and orange lines overlapped frequently (Figure~\ref{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_arithmetic_mean} and Figure~\ref{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_16_fixed_aggregator_arithmetic_mean}). When a median-aggregator was used, a flat tree consistently outperformed a perfect binary tree as Figure~\ref{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_median} and Figure~\ref{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_16_fixed_aggregator_median} showed the orange line staying below the blue line. When a neural-network-aggregator was used, a flat tree generally performed better than a perfect binary tree (Figure~\ref{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_nn} and Figure~\ref{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_16_fixed_aggregator_nn}). 
+
+\paragraph{NEAT-NCL ensemble performance improvement when recursive architecture is matched with specific aggregator correctly}
+When an arithmetic-mean-aggregator was used in a recursive NEAT-NCL ensemble model, arranging base learners in a perfect binary tree gives better performance. When a median-aggregator is used, both recursive architectures give similar performance. 
+
+From Table~\ref{table:experiment_6_neat_ncl_unconnected}, Table~\ref{table:experiment_6_neat_ncl_partial_direct} and Table~\ref{table:experiment_6_neat_ncl_full_direct}, the testing loss (\texttt{loss\_test}) was consistently lower for the binary tree setup (first row) compared to the flat tree setup (second row) when an arithmetic-mean-aggregator was used. This suggested that when learners were highly diverse, a hierarchical approach of averaging predictions in stages was more effective. 
+
+From Table~\ref{table:experiment_6_neat_ncl_unconnected}, Table~\ref{table:experiment_6_neat_ncl_partial_direct} and Table~\ref{table:experiment_6_neat_ncl_full_direct}, the testing loss (\texttt{loss\_test}) in the third row was approximately the same as the value in the fourth row when a median-aggregator was used. This suggested that the ability of median to filter out extreme predictions from highly diverse base learners worked equally well regardless of the structural arrangement of learners. 
+
+\paragraph{A median-aggregator is better for a recursive NEAT-NCL ensemble}
+For a recursive NEAT-NCL ensemble model, a median-aggregator gives better ensemble performance than an arithmetic-mean-aggregator. 
+
+From Table~\ref{table:experiment_6_neat_ncl_unconnected}, Table~\ref{table:experiment_6_neat_ncl_partial_direct} and Table~\ref{table:experiment_6_neat_ncl_full_direct}, the testing loss (\texttt{loss\_test}) stayed within $[0.331, 0.417]$ when an arithmetic-mean-aggregator was used. In contrast, the median-aggregator achieved a significantly lower testing loss of approximately $0.286$. Recursive NEAT-NCL learners were forced to be highly diverse and some individual learners might produce extreme errors or ``outlier'' predictions. The median-agggregator was more robust and effectively ignored these outliers, leading to a more accurate and stable ensemble prediction. 
+
+\paragraph{Exactly same testing loss for a recursive NEAT-NCL ensemble conditionally}
+When a median-aggregator and a flat tree is used, the testing loss (\texttt{loss\_test}) of the recursive NEAT-NCL ensemble model remains \textbf{exactly the same} despite different initialisation methods (i.e. \lstinline[language=ini]|initial_connection|). 
+
+All last rows (\texttt{loss\_test} when a median-aggregator and a flat tree were used) of Table~\ref{table:experiment_6_neat_ncl_unconnected}, Table~\ref{table:experiment_6_neat_ncl_partial_direct} and Table~\ref{table:experiment_6_neat_ncl_full_direct} remained exactly $0.2860206067562103$ across all experiments, regardless of the initial connection settings. This consistency was a direct result of the evolutionary and median convergence of the models. 
+
+From Section~\ref{subsubsec:evaluation_neat_ncl_observations}, the most effective architecture for this task was a base learner with no hidden nodes. While the models (phenomes) started with different configurations (e.g. different number of connections), they all evolved over 400 generations toward this same simple structure. Thus, the ensemble produced similar distributions of predictions. 
+
+The median-aggregator on a flat tree played a key role in this result. By selecting the middle value, it effectively ignored the tiny variations in the distributions of the base learners' predictions in different recursive NEAT-NCL ensemble models. It consistently picked the prediction from a specific, dominant genome at each depth (genome with direct connections between input and output neurons only). Since this process happened the same way across all depths of all recursive NEAT-NCL models, the final ensemble prediction (and therefore the final testing loss) ended up being exactly the same every time. 
+
+
+% ================================ Images ================================
+
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/recursive/recursive_traditional_mse_against_ensemble_size_8_16_fixed_architecture_6_fixed_epoch_num_400_fixed_aggregator_arithmetic_mean.png}
+        \caption{Effect of ensemble size on MSE of a recursive arithmetic-mean-ensemble. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. An arithmetic-mean-aggregator was used. }
+        \label{fig:recursive_traditional_mse_against_ensemble_size_8_16_fixed_architecture_6_fixed_epoch_num_400_fixed_aggregator_arithmetic_mean}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/recursive/recursive_traditional_mse_against_ensemble_size_8_16_fixed_architecture_6_fixed_epoch_num_400_fixed_aggregator_median.png}
+        \caption{Effect of ensemble size on MSE of a recursive median-ensemble. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. A median-aggregator was used. }
+        \label{fig:recursive_traditional_mse_against_ensemble_size_8_16_fixed_architecture_6_fixed_epoch_num_400_fixed_aggregator_median}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/recursive/recursive_traditional_mse_against_ensemble_size_8_16_fixed_architecture_6_fixed_epoch_num_400_fixed_aggregator_nn.png}
+        \caption{Effect of ensemble size on MSE of a recursive neural-network-ensemble. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. A neural-network-aggregator was used. }
+        \label{fig:recursive_traditional_mse_against_ensemble_size_8_16_fixed_architecture_6_fixed_epoch_num_400_fixed_aggregator_nn}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/recursive/recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_arithmetic_mean.png}
+        \caption{Effect of correlation penalty coefficient (in range $[0.4, 0.9]$) on MSE of a recursive NCL ensemble model. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. Ensemble size was 8. An arithmetic-mean-aggregator was used. }
+        \label{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_arithmetic_mean}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/recursive/recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_median.png}
+        \caption{Effect of correlation penalty coefficient (in range $[0.4, 0.9]$) on MSE of a recursive NCL ensemble model. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. Ensemble size was 8. A median-aggregator was used. }
+        \label{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_median}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/recursive/recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_nn.png}
+        \caption{Effect of correlation penalty coefficient (in range $[0.4, 0.9]$) on MSE of a recursive NCL ensemble model. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. Ensemble size was 8. A neural-network-aggregator was used. }
+        \label{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_8_fixed_aggregator_nn}
+    \end{minipage}
+\end{figure}
+
+% 2 Image
+\begin{figure}[H]
+    \centering
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/recursive/recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_16_fixed_aggregator_arithmetic_mean.png}
+        \caption{Effect of correlation penalty coefficient (in range $[0.4, 0.9]$) on MSE of a recursive NCL ensemble model. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. Ensemble size was 16. An arithmetic-mean-aggregator was used. }
+        \label{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_16_fixed_aggregator_arithmetic_mean}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \capstart
+        \vspace{0pt}
+        \centering
+        \includegraphics[width=\linewidth]{img/recursive/recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_16_fixed_aggregator_median.png}
+        \caption{Effect of correlation penalty coefficient (in range $[0.4, 0.9]$) on MSE of a recursive NCL ensemble model. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. Ensemble size was 16. A median-aggregator was used. }
+        \label{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_16_fixed_aggregator_median}
+    \end{minipage}
+\end{figure}
+
+% 1 Image
+\begin{figure}[H]
+    \capstart
+    \centering
+    \includegraphics[width=0.48\textwidth]{img/recursive/recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_16_fixed_aggregator_nn.png}
+    \caption{Effect of correlation penalty coefficient (in range $[0.4, 0.9]$) on MSE of a recursive NCL ensemble model. Base learners had 1 layer of 6 hidden nodes and were trained with 400 epochs. Ensemble size was 16. A neural-network-aggregator was used. }
+    \label{fig:recursive_static_ncl_mse_against_correlation_penalty_coefficient_04_09_fixed_architecture_6_fixed_ensemble_size_16_fixed_aggregator_nn}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|p{4cm}|p{5cm}|c|}
+        \hline
+        Metric & Type & Description & Configurations & Value \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: perfect binary tree, \texttt{aggregator\_type}: arithmetic mean\} & $0.34138959646224976$ \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: flat tree, \texttt{aggregator\_type}: arithmetic mean\} & $0.41740986704826355$ \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: perfect binary tree, \texttt{aggregator\_type}: median\} & $0.2860206067562103$ \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: flat tree, \texttt{aggregator\_type}: median\} & $0.2860206067562103$ \\
+        \hline
+    \end{tabular}
+    \caption{Testing loss of a recursive NEAT-NCL ensemble model after 400 generations (\lstinline[language=ini]|initial_connection = unconnected|). Ensemble size is $200$. }
+    \label{table:experiment_6_neat_ncl_unconnected}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|p{4cm}|p{5cm}|c|}
+        \hline
+        Metric & Type & Description & Configurations & Value \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: perfect binary tree, \texttt{aggregator\_type}: arithmetic mean\} & $0.33125007152557373$ \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: flat tree, \texttt{aggregator\_type}: arithmetic mean\} & $0.3340458571910858$ \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: perfect binary tree, \texttt{aggregator\_type}: median\} & $0.2860206067562103$ \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: flat tree, \texttt{aggregator\_type}: median\} & $0.2860206067562103$ \\
+        \hline
+    \end{tabular}
+    \caption{Testing loss of a recursive NEAT-NCL ensemble model after 400 generations (\lstinline[language=ini]|initial_connection = partial_direct 0.5|). Ensemble size is $200$. }
+    \label{table:experiment_6_neat_ncl_partial_direct}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|p{4cm}|p{5cm}|c|}
+        \hline
+        Metric & Type & Description & Configurations & Value \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: perfect binary tree, \texttt{aggregator\_type}: arithmetic mean\} & $0.34439876675605774$ \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: flat tree, \texttt{aggregator\_type}: arithmetic mean\} & $0.38286858797073364$ \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: perfect binary tree, \texttt{aggregator\_type}: median\} & $0.2860206067562103$ \\
+        \hline
+        \small\texttt{loss\_test} & Float & MSE of a recursive NEAT-NCL ensemble model during testing & \{\texttt{ensemble\_architecture}: flat tree, \texttt{aggregator\_type}: median\} & $0.2860206067562103$ \\
+        \hline
+    \end{tabular}
+    \caption{Testing loss of a recursive NEAT-NCL ensemble model after 400 generations (\lstinline[language=ini]|initial_connection = full_direct|). Ensemble size is $200$. }
+    \label{table:experiment_6_neat_ncl_full_direct}
+\end{table}

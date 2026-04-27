@@ -1,0 +1,574 @@
+% Production mode
+% \documentclass{article}
+
+% Development mode
+\documentclass[draft]{article}
+\includeonly{notation}
+\includeonly{introduction}
+% \includeonly{background}
+% \includeonly{design}
+% \includeonly{evaluation}
+% \includeonly{conclusion}
+
+% ============================================================================
+
+\usepackage[utf8]{inputenc}
+% Appendix
+\usepackage[title,titletoc]{appendix}
+% Margin
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{makecell}
+\usepackage{enumitem}
+% For internal + external links
+\usepackage{hyperref}
+% Customise clickable links, e.g. colour
+\hypersetup{
+    colorlinks=true,
+    citecolor=blue,
+    filecolor=blue,
+    % Black because table of contents should be black instead of blue
+    % Will be updated to blue after table of contents
+    linkcolor=black,
+    urlcolor=blue
+}
+% Required for inserting images
+\usepackage{graphicx}
+\graphicspath{{img/}}
+\usepackage{float}
+\usepackage{placeins}  % Optional but recommended
+\usepackage{amsthm}  % Required for self-defined environment (must be placed before amsmath)
+\usepackage{amsmath}
+% Correct character mapping
+\usepackage[T1]{fontenc}
+% Required for quote in code
+\usepackage{textcomp}
+\usepackage{listings}
+\lstset{
+    % Ensure ' stays straight and does not curl to be LaTeX '
+    upquote=true,
+    % Help with character spacing
+    columns=fullflexible,
+    % Force the ' to be a standard quote
+    literate={'}{{\textquotesingle}}1 {"}{{\textquotedbl}}1
+}
+\lstdefinelanguage{ini}{
+    morecomment=[l]{;},
+    morecomment=[l]{\#},
+    morestring=[b]",
+    alsoletter={_},
+    keywords={
+        initial_connection,
+        full_direct,
+        partial_direct,
+        unconnected
+    },
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{teal},
+    stringstyle=\color{yellow},
+    backgroundcolor=\color{lightgray},
+    frame=single,
+}
+\lstset{ 
+    language=Python,                      % Set language to Python
+    basicstyle=\ttfamily\footnotesize,    % Set font to monospaced and small size
+    keywordstyle=\color{blue}\bfseries,   % Keywords in blue and bold
+    commentstyle=\color{teal},            % Comments in teal
+    stringstyle=\color{yellow},           % Strings in yellow
+    backgroundcolor=\color{lightgray},    % Light gray background
+    numbers=left,                         % Line numbers on the left
+    numberstyle=\tiny\color{gray},        % Line number style
+    stepnumber=1,                         % Line number step (every line)
+    numbersep=5pt,                        % Distance from line numbers to code
+    showstringspaces=false,               % Don't show spaces in strings
+    breaklines=true,                      % Break lines when necessary
+    breakatwhitespace=true,               % Break lines at whitespace
+    showtabs=false,                       % Don't show tab characters
+    captionpos=b,                         % Position caption at the bottom
+    tabsize=4,                            % Set tab size
+    escapeinside={\%*}{*)},               % Enable escape sequences for LaTeX inside code
+}
+\usepackage{newtxtext,newtxmath}  % Times New Roman text + math
+% Self-define environment
+\newtheorem{theorem}{Theorem}
+% No identation for any paragraphs
+% \usepackage{indentfirst}
+\setlength{\parindent}{0pt}
+% Space between paragraphs
+\setlength{\parskip}{1em}
+
+
+% ================================================
+\begin{document}
+
+
+\begin{titlepage}
+    % % School Icon on Top Left
+    % \begin{flushleft}
+    %     \includegraphics[width=0.2\textwidth]{img/front/school-logo.png}
+    % \end{flushleft}
+
+    \begin{center}
+        \vspace*{1cm}
+
+        % Title
+        \huge
+        \textbf{The Roles of Diversity and Aggregation in Ensemble Learning}
+
+        \vspace{1.5cm}
+
+        % Degree info
+        \large
+        A final year report submitted to The University of Manchester for the degree of \textbf{Bachelor of Science in Computer Science} in the Faculty of Science and Engineering
+
+        \vspace{1.5cm}
+
+        % Year
+        \textbf{Year of submission}
+        \\
+        2026
+
+        \vspace{2cm}
+
+        % Author
+        \textbf{Author}
+        \\
+        \large Hin Yui Jacob Yip
+        \\
+        \large Supervised by: Professor Gavin Brown
+
+        \vfill
+
+        % Department
+        \large
+        Department of Computer Science
+        \\
+        The University of Manchester
+
+        \vspace{0.8cm}
+        
+    \end{center}
+\end{titlepage}
+
+
+% Generate a table of contents
+\newpage
+\tableofcontents
+\newpage
+
+
+% Change colour of links from black to blue
+\hypersetup{
+    linkcolor=blue
+}
+
+
+\newpage
+% Ignore word count
+%TC:ignore
+\section*{Abstract}
+% Add to table of contents manually
+\addcontentsline{toc}{section}{Abstract}
+While current machine learning typically relies on independent and single-model architectures~\cite{zhao2023survey}, ensemble learning leverages a ``committee'' of learners to achieve superior predictive accuracy. This dissertation investigates the theoretical and empirical benefits of ensemble learning, with a specific focus on \textbf{Negative Correlation Learning} (NCL). Through a series of mathematical derivations and experiments, we demonstrate that an ensemble model consistently outperforms a single Multi-Layer Perceptron (MLP). 
+
+A central theme of this work is the management of diversity, which is the degree to which base learners capture distinct patterns in the data. We explore the ``double-edged sword'' of diversity: while controlled diversity reduces ensemble risk, unmanaged diversity can degrade performance. This research further extends the NCL framework by integrating it with NeuroEvolution of Augmenting Topologies (NEAT), enabling an analysis of architectural diversity alongside weight-based diversity. 
+
+Key achievements include the empirical validation of the \textbf{Ambiguity Decomposition} theorem and the proposal of a recursive ensemble framework that utilises optimised structural arrangements and neural-network aggregators. Furthermore, this project introduces a novel algorithm designed to convert dynamic NEAT-based neural networks into a GPU-runnable format for inference, providing a significant computational performance boost. Our findings confirm that when diversity and aggregation are properly aligned, ensemble models offer higher accuracy and greater resource efficiency than single-model approaches. 
+% Start counting words again
+%TC:endignore
+
+
+\newpage
+% Ignore word count
+%TC:ignore
+\section*{Declaration}
+% Add to table of contents manually
+\addcontentsline{toc}{section}{Declaration}
+No portion of the work referred to in this dissertation has
+been submitted in support of an application for another
+degree or qualification of this or any other university or
+other institute of learning. 
+% Start counting words again
+%TC:endignore
+
+
+% Ignore word count
+%TC:ignore
+\section*{Copyright}
+% Add to table of contents manually
+\addcontentsline{toc}{section}{Copyright}
+The author of this thesis (including any appendices and/or schedules to this thesis) owns certain copyright or related rights in it (the ``Copyright'') and the author has given The University of Manchester certain rights to use such Copyright, including for administrative purposes. 
+
+Copies of this thesis, either in full or in extracts and whether in hard or electronic copy, may be made \textbf{only} in accordance with the Copyright, Designs and Patents Act 1988 (as amended) and regulations issued under it or, where appropriate, in accordance with licensing agreements which the University has from time to time. This page must form part of any such copies made. 
+
+The ownership of certain Copyright, patents, designs, trade marks and other intellectual property (the ``Intellectual Property'') and any reproductions of copyright works in the thesis, for example graphs and tables (``Reproductions''), which may be described in this thesis, may not be owned by the author and may be owned by third parties. Such Intellectual Property and Reproductions cannot and must not be made available for use without the prior written permission of the owner(s) of the relevant Intellectual Property and/or Reproductions. 
+
+Further information on the conditions under which disclosure, publication and commercialisation of this thesis, the Copyright and any Intellectual Property and/or Reproductions described in it may take place is available in the University IP Policy (see \url{http://documents.manchester.ac.uk/DocuInfo.aspx?DocID=24420}), in any relevant Thesis restriction declarations deposited in the University Library, The University Library's regulations (see \url{http://www.library.manchester.ac.uk/about/regulations/}) and in The University's policy on presentation of Theses. 
+% Start counting words again
+%TC:endignore
+
+
+% Ignore word count
+%TC:ignore
+\section*{Acknowledgement}
+% Add to table of contents manually
+\addcontentsline{toc}{section}{Acknowledgement}
+I would like to express my sincere gratitude to my supervisor, Professor Gavin Brown, for his invaluable guidance and unwavering support throughout this project. I also thank my second marker for their time in reviewing and evaluating this work. 
+I would also like to acknowledge the assistance given by Research IT and the use of the Computational Shared Facility at The University of Manchester. 
+% Start counting words again
+%TC:endignore
+
+
+\include{notation}
+
+
+% Reset section counter so the next section is 1
+\setcounter{section}{0}
+
+
+\include{introduction}
+
+
+\include{background}
+
+
+\include{design}
+
+
+\include{evaluation}
+
+
+\include{conclusion}
+
+
+% Ignore word count
+%TC:ignore
+\begin{appendices}
+    % \section{$\lambda_{upper\_bound}$}
+    % \label{appendix:lambda_upper_bound}
+    % \[
+    % \lambda_{upper\_bound} = \frac{m^2}{2(m - 1)^2}
+    % \]
+    % \begin{center}
+    %     \begin{minipage}{0.8\linewidth}
+    %         \small
+    %         where $m$ is the ensemble size. This formula is copied from Brown et al.\ \cite{brown2005managing}. 
+    %     \end{minipage}
+    % \end{center}
+
+
+    % \section{Correlation Penalty Function Conversion}
+    % \label{appendix:correlation_penalty_function_conversion}
+    % \begin{align*}
+    %     &p_i = (\hat{y}_i - \bar{y}) \sum_{j \neq i} (\hat{y}_j - \bar{y})
+    %     \\
+    %     &= (\hat{y}_i - \bar{y}) \left[\sum_{j \neq i} (\hat{y}_j - \bar{y}) + \hat{y}_i - \bar{y} - \hat{y}_i + \bar{y}\right]
+    %     \\
+    %     &= (\hat{y}_i - \bar{y}) \left[0 - \hat{y}_i + \bar{y}\right] \quad \text{(}\sum_{j \neq i} (\hat{y}_j - \bar{y}) + \hat{y}_i - \bar{y} = 0\text{)}
+    %     \\
+    %     &= (\hat{y}_i - \bar{y})^2
+    % \end{align*}
+    % \begin{center}
+    %     \begin{minipage}{0.8\linewidth}
+    %         \small
+    %         where $\hat{y}_i$ is prediction from $i$th base learner and $\bar{y}$ is the mean prediction. 
+    %     \end{minipage}
+    % \end{center}
+
+
+    % \section{Proof of Theorem~\ref{theorem:bias_variance_decomposition}}
+    % \label{appendix:bias_variance_decomposition}
+    % \[
+    % \underbrace{\mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y})^2\right]\right]}_{\text{expected risk}} = \underbrace{\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right]}_{\text{noise}} + \underbrace{\mathbb{E}_{\mathbf{x}y}\left[\left(\hat{y^*} - \mathbb{E}_{\mathcal{S}}[\hat{y}]\right)^2\right]}_{\text{bias}} + \underbrace{\mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[(\hat{y} - \mathbb{E}_{\mathcal{S}}[\hat{y}])^2\right]\right]}_{\text{variance}}
+    % \]
+    % \begin{center}
+    %     \begin{minipage}{0.8\linewidth}
+    %         \small
+    %         where $\hat{y}$ is the prediction made by a model and $\hat{y^*}$ is the prediction of the Bayes Model. 
+    %     \end{minipage}
+    %     \begin{proof}
+    %         \begin{align*}
+    %             &\mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y})^2\right]\right] - \mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right]
+    %             \\
+    %             &= \underbrace{\mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y})^2\right]\right] - R(\mathbb{E}_{\mathcal{S}}\left[\hat{y}\right])}_{\text{variance}} + \underbrace{R(\mathbb{E}_{\mathcal{S}}\left[\hat{y}\right]) - \mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right]}_{\text{bias}}
+    %             \\
+    %             % ========================================
+    %             &\mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y})^2\right]\right] - R(\mathbb{E}_{\mathcal{S}}\left[\hat{y}\right])
+    %             \\
+    %             &= \mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y})^2\right]\right] - \mathbb{E}_{\mathbf{x}y}\left[(y - \mathbb{E}_{\mathcal{S}}[\hat{y}])^2\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y})^2 - (y - \mathbb{E}_{\mathcal{S}}[\hat{y}])^2\right]\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[y^2 + \hat{y}^2 - 2y\hat{y} - y^2 - \mathbb{E}_{\mathcal{S}}[\hat{y}]^2 + 2y\mathbb{E}_{\mathcal{S}}[\hat{y}]\right]\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[\hat{y}^2 - 2y\hat{y} - \mathbb{E}_{\mathcal{S}}[\hat{y}]^2 + 2y\mathbb{E}_{\mathcal{S}}[\hat{y}]\right]\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}[\hat{y}^2] - 2y\mathbb{E}_{\mathcal{S}}[\hat{y}] - \mathbb{E}_{\mathcal{S}}[\hat{y}]^2 + 2y\mathbb{E}_{\mathcal{S}}[\hat{y}]\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}[\hat{y}^2] - \mathbb{E}_{\mathcal{S}}[\hat{y}]^2\right]
+    %             \\
+    %             &= \underbrace{\mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[(\hat{y} - \mathbb{E}_{\mathcal{S}}[\hat{y}])^2\right]\right]}_{\text{variance}} \quad \text{(}\mathbb{E}\left[Z^2\right] - (\mathbb{E}\left[Z^2\right])^2 = \mathbb{E}\left[(Z - \mathbb{E}\left[Z\right])^2\right]\text{)}
+    %             \\
+    %             % ========================================
+    %             &R(\mathbb{E}_{\mathcal{S}}\left[\hat{y}\right]) - \mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right]
+    %             \\
+    %             &=\mathbb{E}_{\mathbf{x}y}\left[(y - \mathbb{E}_{\mathcal{S}}[\hat{y}])^2\right] - \mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathbf{x}y}\left[(y - \mathbb{E}_{\mathcal{S}}[\hat{y}])^2 - (y - \hat{y^*})^2\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathbf{x}y}\left[y^2 + \mathbb{E}_{\mathcal{S}}[\hat{y}]^2 - 2y\mathbb{E}_{\mathcal{S}}[\hat{y}] - y^2 - (\hat{y^*})^2 + 2y\hat{y^*}\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathbf{x}}\left[\mathbb{E}_{y \mid \mathbf{x}}\left[\mathbb{E}_{\mathcal{S}}[\hat{y}]^2 - 2y\mathbb{E}_{\mathcal{S}}[\hat{y}] - (\hat{y^*})^2 + 2y\hat{y^*}\right]\right] \quad \text{(}\mathbb{E}_{\mathbf{x}y}\left[...\right] = \mathbb{E}_{\mathbf{x}}\left[\mathbb{E}_{y \mid \mathbf{x}}\left[...\right]\right]\text{)}
+    %             \\
+    %             &= \mathbb{E}_{\mathbf{x}}\left[\mathbb{E}_{\mathcal{S}}[\hat{y}]^2 - 2\hat{y^*}\mathbb{E}_{\mathcal{S}}[\hat{y}] - (\hat{y^*})^2 + 2(\hat{y^*})^2\right] \quad \text{(}\hat{y^*} = \mathbb{E}_{y \mid \mathbf{x}}\left[y\right]\text{)}
+    %             \\
+    %             &= \mathbb{E}_{\mathbf{x}}\left[\mathbb{E}_{\mathcal{S}}[\hat{y}]^2 - 2\hat{y^*}\mathbb{E}_{\mathcal{S}}[\hat{y}] + (\hat{y^*})^2\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathbf{x}}\left[\left(\hat{y^*} - \mathbb{E}_{\mathcal{S}}[\hat{y}]\right)^2\right]
+    %             \\
+    %             &= \underbrace{\mathbb{E}_{\mathbf{x}y}\left[\left(\hat{y^*} - \mathbb{E}_{\mathcal{S}}[\hat{y}]\right)^2\right]}_{\text{bias}}
+    %             \\
+    %             % ========================================
+    %             &\therefore \mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y})^2\right]\right] - \mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right] = \underbrace{\mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[(\hat{y} - \mathbb{E}_{\mathcal{S}}[\hat{y}])^2\right]\right]}_{\text{variance}} + \underbrace{\mathbb{E}_{\mathbf{x}y}\left[\left(\hat{y^*} - \mathbb{E}_{\mathcal{S}}[\hat{y}]\right)^2\right]}_{\text{bias}}
+    %             \\
+    %             % ========================================
+    %             &\therefore \underbrace{\mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y})^2\right]\right]}_{\text{expected risk}} = \underbrace{\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right]}_{\text{noise}} + \underbrace{\mathbb{E}_{\mathbf{x}y}\left[\left(\hat{y^*} - \mathbb{E}_{\mathcal{S}}[\hat{y}]\right)^2\right]}_{\text{bias}} + \underbrace{\mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[(\hat{y} - \mathbb{E}_{\mathcal{S}}[\hat{y}])^2\right]\right]}_{\text{variance}}
+    %         \end{align*}
+    %     \end{proof}
+    % \end{center}
+
+
+    % \section{Proof of Theorem~\ref{theorem:ncl_differentiation_incorrect}}
+    % \label{appendix:ncl_differentiation_incorrect}
+    % \[
+    % \frac{\partial{p_i}}{\partial{\hat{y}_i}} = -(\hat{y}_i - \bar{y})
+    % \]
+    % \begin{center}
+    %     \begin{minipage}{0.8\linewidth}
+    %         \small
+    %         where it is assumed that $\bar{y}$ has a constant value with respect to $\hat{y}_i$. The formula is proposed by Liu et al.\ \cite{liu1999ensemble}. 
+    %     \end{minipage}
+    %     \begin{proof}
+    %         \begin{align*}
+    %             &\frac{\partial{p_i}}{\partial{\hat{y}_i}}
+    %             \\
+    %             &= \frac{\partial{(\hat{y}_i - \bar{y})\sum_{j \neq i} (\hat{y}_j - \bar{y})}}{\partial{\hat{y}_i}}
+    %             \\
+    %             &= \sum_{j \neq i} (\hat{y}_j - \bar{y}) \frac{\partial{(\hat{y}_i - \bar{y})}}{\partial{\hat{y}_i}} \quad \text{(}\bar{y}\text{ is assumed to have a constant value with respect to }\hat{y}_i\text{)}
+    %             \\
+    %             &= \sum_{j \neq i} (\hat{y}_j - \bar{y}) (1 - 0)
+    %             \\
+    %             &= \sum_{j \neq i} (\hat{y}_j - \bar{y})
+    %             \\
+    %             &= \sum_{j \neq i} (\hat{y}_j - \bar{y}) + \hat{y}_i - \bar{y} - \hat{y}_i + \bar{y}
+    %             \\
+    %             &= 0 - \hat{y}_i + \bar{y}
+    %             \\
+    %             &= -(\hat{y}_i - \bar{y})
+    %         \end{align*}
+    %     \end{proof}
+    % \end{center}
+
+
+    % \section{Proof of Theorem~\ref{theorem:loss_function_ncl_lambda_1}}
+    % \label{appendix:loss_function_ncl_lambda_1}
+    % \[
+    % \underbrace{\mathcal{L}_i}_{\text{ith base learner loss}} = \frac{1}{n} \sum^{n}_{i = 1} \underbrace{(\bar{y} - y)^2}_{\text{squared loss of 1 data point}}
+    % \]
+    % \begin{center}
+    %     \begin{minipage}{0.8\linewidth}
+    %         \small
+    %         for ith base learner, when $\lambda = 1$, MSE is used and the ensemble model is an arithmetic-mean-aggregator. $n$ is the number of data points in the training dataset. 
+    %     \end{minipage}
+    %     \begin{proof}
+    %         \begin{align*}
+    %             &\mathcal{L}_{i} = \frac{1}{n} \sum^{n}_{i = 1} \left[(\hat{y}_i - y)^2 - \lambda (\hat{y}_i - \bar{y})^2\right]
+    %             \\
+    %             &= \frac{1}{n} \sum^{n}_{i = 1} \left[(\hat{y}_i - y)^2 - (\hat{y}_i - \bar{y})^2\right] \quad \text{(}\lambda = 1\text{)}
+    %             \\
+    %             &= \frac{1}{n} \sum^{n}_{i = 1} \left[(\hat{y}_i - y + \hat{y}_i - \bar{y})(\hat{y}_i - y - \hat{y}_i + \bar{y})\right]
+    %             \\
+    %             &= \frac{1}{n} \sum^{n}_{i = 1} \left[(2\hat{y}_i - y - \bar{y})(\bar{y} - y)\right]
+    %             \\
+    %             &= (\bar{y} - y) \frac{1}{n} \sum^{n}_{i = 1} \left[(2\hat{y}_i - y - \bar{y})\right]
+    %             \\
+    %             &= (\bar{y} - y) \frac{1}{n} \sum^{n}_{i = 1} \left[(2\bar{y} - y - \bar{y})\right] \quad \text{(By the definition of arithmetic mean combiner }\bar{y}\text{)}
+    %             \\
+    %             &= (\bar{y} - y) \frac{1}{n} \sum^{n}_{i = 1} \left[(\bar{y} - y)\right]
+    %             \\
+    %             &= \frac{1}{n} \sum^{n}_{i = 1} \left[(\bar{y} - y)(\bar{y} - y)\right]
+    %             \\
+    %             &= \frac{1}{n} \sum^{n}_{i = 1} \underbrace{(\bar{y} - y)^2}_{\text{squared loss of 1 data point}}
+    %         \end{align*}
+    %     \end{proof}
+    % \end{center}
+
+
+    % \section{Proof of Theorem~\ref{theorem:ncl_differentiation_correct}}
+    % \label{appendix:ncl_differentiation_correct}
+    % \[
+    % \frac{\partial{p_i}}{\partial{\hat{y}_i}} = \frac{-2 (m - 1)}{m} (\hat{y}_i - \bar{y})
+    % \]
+    % \begin{center}
+    %     \begin{minipage}{0.8\linewidth}
+    %         \small
+    %         where $\bar{y}$ is not assumed to have a constant value with respect to $\hat{y}_i$. It is a modified version of the formula proposed by Liu et al.\ \cite{liu1999ensemble}. 
+    %     \end{minipage}
+    %     \begin{proof}
+    %         \begin{align*}
+    %             &\frac{\partial{p_i}}{\partial{\hat{y}_i}}
+    %             \\
+    %             &= \frac{\partial{(\hat{y}_i - \bar{y})^2}}{\partial{\hat{y}_i}}
+    %             \\
+    %             &= -2 (\hat{y}_i - \bar{y}) \frac{\partial{(\hat{y}_i - \bar{y})}}{\partial{\hat{y}_i}}
+    %             \\
+    %             &= -2 (\hat{y}_i - \bar{y}) \frac{\partial{(\hat{y}_i - \frac{1}{m} \hat{y}_1 - \frac{1}{m} \hat{y}_2 - ... - \frac{1}{m} \hat{y}_i - ... - \frac{1}{m} \hat{y}_m)}}{\partial{\hat{y}_i}} \quad \text{(}\bar{y} = \frac{1}{m} \sum_{i = 1}^m \hat{y}_i\text{)}
+    %             \\
+    %             &= -2 (\hat{y}_i - \bar{y}) (1 - 0 - 0 ... - \frac{1}{m} - ... - 0)
+    %             \\
+    %             &= \frac{-2 (m - 1)}{m} (\hat{y}_i - \bar{y})
+    %         \end{align*}
+    %     \end{proof}
+    % \end{center}
+
+
+    % \section{Proof of Theorem~\ref{theorem:ensemble_population_risk_le_average_population_risk}}
+    % \label{appendix:ensemble_population_risk_le_average_population_risk}
+    % \[
+    % R(\bar{y}) \le \frac{1}{m} \sum_{i=1}^{m} R(\hat{y}_i)
+    % \]
+    % \begin{center}
+    %     \begin{minipage}{0.8\linewidth}
+    %         \small
+    %         where $R(\bar{y})$ is ensemble population risk and $R(\hat{y}_i)$ is the population risk of the $i$th base learner. 
+    %     \end{minipage}
+    %     \begin{proof}
+    %         \begin{align*}
+    %             &R(\bar{y})
+    %             \\
+    %             &= \mathbb{E}_{\bar{y}y}[(\bar{y} - y)^2] \quad \text{(MSE is used)}
+    %             \\
+    %             &= \mathbb{E}_{\bar{y}y}[\frac{1}{m} \sum_{i = 1}^{m} (\bar{y}_i - y)^2 - \frac{1}{m} \sum_{i = 1}^{m} (\bar{y}_i - \hat{y})^2] \quad \text{(According to Theorem~\ref{theorem:ambiguity_decomposition})}
+    %             \\
+    %             &\leq \mathbb{E}_{\bar{y}y}[\frac{1}{m} \sum_{i = 1}^{m} (\bar{y}_i - y)^2]
+    %         \end{align*}
+    %         \begin{align*}
+    %             &\mathbb{E}_{\bar{y}y}[\frac{1}{m} \sum_{i = 1}^{m} (\bar{y}_i - y)^2]
+    %             \\
+    %             &= \frac{1}{m} \sum_{i = 1}^{m} \mathbb{E}_{\bar{y}y}[(\bar{y}_i - y)^2]
+    %             \\
+    %             &= \frac{1}{m} \sum_{i = 1}^{m} R(\hat{y}_i)
+    %             \\
+    %             &\therefore R(\bar{y}) \leq \frac{1}{m} \sum_{i = 1}^{m} R(\hat{y}_i)
+    %         \end{align*}
+    %     \end{proof}
+    % \end{center}
+
+
+    % \section{Proof of Theorem~\ref{theorem:ambiguity_decomposition}}
+    % \label{appendix:ambiguity_decomposition}
+    % \[
+    % \underbrace{(\bar{y} - y)^2}_{\text{ensemble loss}} = \underbrace{\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - y)^2}_{\text{average loss}} - \underbrace{\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - \bar{y})^2}_{ambiguity}
+    % \]
+    % \begin{center}
+    %     \begin{minipage}{0.8\linewidth}
+    %         \small
+    %         where $\hat{y}_i$ is the prediction made by the $i$th base learner, $y$ is the true value and $\bar{y}$ is the mean prediction of all base learners. 
+    %     \end{minipage}
+    %     \begin{proof}
+    %         \begin{align*}
+    %             &(\bar{y} - y)^2
+    %             \\
+    %             &= (\bar{y} - y)(\bar{y} - y)
+    %             \\
+    %             &= (\bar{y} - y)\left[\frac{1}{m} \sum_{i=1}^{m} \hat{y}_i + \bar{y} - y - \frac{1}{m} \sum_{i=1}^{m} \hat{y}_i\right]
+    %             \\
+    %             &= (\bar{y} - y)\left[\frac{1}{m} \sum_{i=1}^{m} \hat{y}_i + \frac{1}{m} \sum_{i=1}^{m} \hat{y}_i - \frac{1}{m} \sum_{i=1}^{m} y - \frac{1}{m} \sum_{i=1}^{m} \bar{y}\right] \quad \text{(By the definition of arithmetic mean combiner }\bar{y}\text{)}
+    %             \\
+    %             &= (\bar{y} - y) \left[\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i + \hat{y}_i - y - \bar{y})\right]
+    %             \\
+    %             &= \frac{1}{m} \sum_{i=1}^{m} \left[(\bar{y} - y) (\hat{y}_i + \hat{y}_i - y - \bar{y})\right]
+    %             \\
+    %             &= \frac{1}{m} \sum_{i=1}^{m} \left[((\hat{y}_i - y) - (\hat{y}_i - \bar{y})) ((\hat{y}_i - y) + (\hat{y}_i - \bar{y}))\right]
+    %             \\
+    %             &= \frac{1}{m} \sum_{i=1}^{m} \left[(\hat{y}_i - y)^2 - (\hat{y}_i - \bar{y})^2\right]
+    %             \\
+    %             &= \underbrace{\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - y)^2}_{\text{average loss}} - \underbrace{\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - \bar{y})^2}_{ambiguity}
+    %         \end{align*}
+    %     \end{proof}
+    % \end{center}
+
+
+    % \section{Proof of Theorem~\ref{theorem:bias_variance_diversity_decomposition}}
+    % \label{appendix:bias_variance_diversity_decomposition}
+    % \begin{align*}
+    %     \underbrace{\mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \bar{y})^2\right]\right]}_{\text{expected ensemble risk}} = 
+    %     \\
+    %     &\phantom{=} \underbrace{\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right]}_{\text{noise}} + \underbrace{\frac{1}{m} \sum_{i=1}^{m} \mathbb{E}_{\mathbf{x}y}\left[\left(\hat{y^*} - \mathbb{E}_{\mathcal{S}}[\hat{y}_i]\right)^2\right]}_{\text{average bias}} + \underbrace{\frac{1}{m} \sum_{i=1}^{m} \mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[(\hat{y}_i - \mathbb{E}_{\mathcal{S}}[\hat{y}_i])^2\right]\right]}_{\text{average variance}}
+    %     \\
+    %     &\phantom{=}  - \underbrace{\mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - \bar{y})^2\right]\right]}_{\text{diversity}}
+    % \end{align*}
+    % \begin{center}
+    %     \begin{minipage}{0.8\linewidth}
+    %         \small
+    %         where $\hat{y}_i$ is the prediction made by the $i$th base learner, $\bar{y}$ is the mean prediction of all base learners and $\hat{y^*}$ is the prediction of the Bayes Model. 
+    %     \end{minipage}
+    %     \begin{proof}
+    %         \begin{align*}
+    %             &\mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \bar{y})^2\right]\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(\bar{y} - y)^2\right]\right]
+    %             \\
+    %             &= \mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - y)^2 - \frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - \bar{y})^2\right]\right]
+    %             \\
+    %             &= \frac{1}{m} \sum_{i=1}^{m} \mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(\hat{y}_i - y)^2\right]\right] - \mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - \bar{y})^2\right]\right]
+    %             \\
+    %             &= \frac{1}{m} \sum_{i=1}^{m} \mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right] + \frac{1}{m} \sum_{i=1}^{m} \mathbb{E}_{\mathbf{x}y}\left[\left(\hat{y^*} - \mathbb{E}_{\mathcal{S}}[\hat{y}_i]\right)^2\right]
+    %             \\
+    %             &\phantom{=} \quad + \frac{1}{m} \sum_{i=1}^{m} \mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[(\hat{y}_i - \mathbb{E}_{\mathcal{S}}[\hat{y}_i])^2\right]\right] - \mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - \bar{y})^2\right]\right] \quad \text{(Using Theorem~\ref{theorem:bias_variance_decomposition})}
+    %             \\
+    %             &= \mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right] + \frac{1}{m} \sum_{i=1}^{m} \mathbb{E}_{\mathbf{x}y}\left[\left(\hat{y^*} - \mathbb{E}_{\mathcal{S}}[\hat{y}_i]\right)^2\right] + \frac{1}{m} \sum_{i=1}^{m} \mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[(\hat{y}_i - \mathbb{E}_{\mathcal{S}}[\hat{y}_i])^2\right]\right] - \mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - \bar{y})^2\right]\right]
+    %             \\
+    %             % ========================================
+    %             &\therefore \underbrace{\mathbb{E}_{\mathcal{S}}\left[\mathbb{E}_{\mathbf{x}y}\left[(y - \bar{y})^2\right]\right]}_{\text{expected ensemble risk}} = 
+    %             \\
+    %             &\phantom{=} \underbrace{\mathbb{E}_{\mathbf{x}y}\left[(y - \hat{y^*})^2\right]}_{\text{noise}} + \underbrace{\frac{1}{m} \sum_{i=1}^{m} \mathbb{E}_{\mathbf{x}y}\left[\left(\hat{y^*} - \mathbb{E}_{\mathcal{S}}[\hat{y}_i]\right)^2\right]}_{\text{average bias}} + \underbrace{\frac{1}{m} \sum_{i=1}^{m} \mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[(\hat{y}_i - \mathbb{E}_{\mathcal{S}}[\hat{y}_i])^2\right]\right]}_{\text{average variance}} - \underbrace{\mathbb{E}_{\mathbf{x}y}\left[\mathbb{E}_{\mathcal{S}}\left[\frac{1}{m} \sum_{i=1}^{m} (\hat{y}_i - \bar{y})^2\right]\right]}_{\text{diversity}}
+    %         \end{align*}
+    %     \end{proof}
+    % \end{center}
+
+
+    \section{Source Code}
+    All the accompanying source code for this project is available 
+    \\
+    \url{https://github.com/Toothless7788/uom-dissertation}. 
+
+
+    \section{Reproducibility}
+    \begin{enumerate}
+        \item Python: 3.11.4
+
+        \item Number of GPUs: 2
+        
+        \item All Python dependencies are pinned in the \texttt{requirements.txt} file from the source code. 
+    \end{enumerate}
+
+
+    % TODO: Add Gantt Chart
+\end{appendices}
+% Start counting words again
+%TC:endignore
+
+
+% Ignore word count
+%TC:ignore
+\bibliographystyle{IEEEtran} % Or plain, alpha, apalike, etc.
+\bibliography{references}
+% Add to table of contents manually
+\addcontentsline{toc}{section}{References}
+% Start counting words again
+%TC:endignore
+
+
+\end{document}

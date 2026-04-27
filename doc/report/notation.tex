@@ -1,0 +1,37 @@
+\newpage
+% Ignore word count
+%TC:ignore
+\section*{Notation and Terminology}
+% Add to table of contents manually
+\addcontentsline{toc}{section}{Notation and Terminology}
+\begin{itemize}
+    \item $\lambda$ — Correlation penalty coefficient used in this work
+    \item $\gamma$ — Correlation penalty coefficient used in Brown et al.\ \cite{brown2005managing}, which is equivalent to $\lambda$ in this work
+    \item $\lambda^*$ — Optimal $\lambda$
+    \item $\lambda_{upper\_bound}$ — Upper bound of $\lambda$ given by the formula $\frac{m^2}{2(m - 1)^2}$ in Brown et al.\ \cite{brown2005managing}
+    \item $\rho$ — Diversity coefficient (see Equation~\ref{equation:diversity_coefficient})
+    \item $\mathbf{x}$ — Input of a regression prediction
+    \item $y$ — True value of a given input $\mathbf{x}$
+    \item $\hat{y}$ — Prediction of 1 base learner
+    \item $\bar{y}$ — Mean prediction of all base learners
+    \item $y^*$ — The Bayes Model
+    \item $\hat{y^*}$ — Prediction of the Bayes Model
+    \item $p_i$ — The correlation penalty term appended to squared loss of the $i$th base learner in NCL
+    \item $m$ — Ensemble size
+    \item $\mathcal{S}$ — The set of all possible training datasets
+    \item $\sigma$ — Niche radius for NEAT-NCL in Section~\ref{subsec:stage_4}
+    \item Arithmetic-mean-ensemble — A traditional ensemble that uses the arithmetic mean of predictions from base learners to form the ensemble prediction (explored in Section~\ref{subsec:stage_2}, Section~\ref{subsec:stage_5} and Section~\ref{subsec:stage_6})
+    \item Base learner — A MLP whose individual prediction is aggregated with predictions from other base learners to form the final ensemble prediction
+    \item Idempotent — An idempotent mathematical function gives the same result when applied multiple times as it does when applied once. Formally, a function $f$ is idempotent if $f(f(x)) = f(x)$ for all $x$ in its domain. 
+    \item Median-ensemble — A traditional ensemble that uses the median of predictions from base learners to form the ensemble prediction (explored in Section~\ref{subsec:stage_5} and Section~\ref{subsec:stage_6})
+    \item MLP — Multi-Layer Perceptron
+    \item MSE — Mean Squared Error (see Equation~\ref{equation:mse})
+    \item NCL — Negative Correlation Learning
+    \item NEAT — NeuroEvolution of Augmenting Topologies
+    \item Neural-network-ensemble — A traditional ensemble that uses a neural network with no hidden layers and no dropout to aggregate predictions from base learners to form the ensemble prediction (explored in Section~\ref{subsec:stage_5} and Section~\ref{subsec:stage_6})
+    \item RMSE — Root Mean Squared Error (see Equation~\ref{equation:rmse})
+    \item Traditional ensemble — A non-recursive ensemble model whose base learners are arranged at the same depth/level. Their predictions are aggregated by an aggregator of a specific type. 
+\end{itemize}
+% Start counting words again
+%TC:endignore
+\newpage

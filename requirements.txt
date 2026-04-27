@@ -1,0 +1,17 @@
+matplotlib==3.10.8
+neat-python==1.1.0
+numpy==2.4.2
+pandas==3.0.1
+pyarrow==23.0.1
+pytest==9.0.2
+# Cannot pip install pytorch-neat as it is not supported by PyPI yet
+# You need to do the following installation steps
+# NOTE: You need neat-python installed
+# git clone https://github.com/uber-research/PyTorch-NEAT.git
+# cd PyTorch-NEAT
+# cp -r pytorch_neat <path_to_python_site_packages>
+# NOTE: Use python -m site to find the path to Python site-packages
+# pytorch-neat
+seaborn==0.13.2
+scikit-learn==1.8.0
+torch==2.10.0+cpu
